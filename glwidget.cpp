@@ -2,20 +2,26 @@
 
 GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent) {
     setMouseTracking(true);
+    this->selectedIndex = -1;
 
     FlagObject* flag = new FlagObject();
-    flag->setPosition(QVector3D(0, -2, -10));
-    flag->setRotate(-22, 0, 0, 1);
-    flag->setScale(.125);
+    flag->setPosition(QVector3D(0, -2, -18));
+    flag->setRotateZ(-10);
+    flag->setScale(.25);
     flag->setType(0);
     this->_objects.append(flag);
 
+    QObject::connect(flag, SIGNAL(redraw()), this, SLOT(updateGL()));
+
     FlagObject* flag2 = new FlagObject();
-    flag2->setPosition(QVector3D(-3, 0, -10));
+    flag2->setPosition(QVector3D(-3, 0, -22));
     flag2->setScale(0.25);
-    flag2->setRotate(15.0, 0, 0, 1);
+    flag2->setRotateZ(15.0);
     flag2->setType(1);
     this->_objects.append(flag2);
+    QObject::connect(flag2, SIGNAL(redraw()), this, SLOT(updateGL()));
+
+    this->nextDepth = -23;
 }
 
 void GLWidget::initializeGL()
@@ -31,9 +37,11 @@ void GLWidget::initializeGL()
 
 void GLWidget::resizeGL(int w, int h)
 {
+
+    glViewport(0,0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f,(double)w/(double)h,10.0f,100.0f);
+    gluPerspective(45.0f,(double)w/(double)h,9.0f,100.0f);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
@@ -42,8 +50,6 @@ void GLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-
-    //glLoadIdentity();
     for (int i = 0; i < this->_objects.size(); i++) {
         glLoadName(i+1);
         this->_objects.at(i)->draw();
@@ -52,21 +58,18 @@ void GLWidget::paintGL()
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
-    std::cout << "ASD" << std::endl;
-    if (event->button() == Qt::LeftButton){
+    if (event->button() == Qt::LeftButton or event->button() == Qt::RightButton){
         this->checkClick(event);
     }
 }
 
-#define SELECT_BUFSIZE 512
-
 void GLWidget::checkClick(QMouseEvent *event)
 {
-    GLuint select_buf[SELECT_BUFSIZE];
+    GLuint select_buf[512];
     GLint viewport[4];
     GLuint hits;
 
-    glSelectBuffer(SELECT_BUFSIZE, select_buf);
+    glSelectBuffer(512, select_buf);
     glRenderMode(GL_SELECT);
 
     glInitNames();
@@ -87,22 +90,17 @@ void GLWidget::checkClick(QMouseEvent *event)
     );
     gluPerspective(
             45.0f,
-            (viewport[2]-viewport[0]) / (viewport[3]-viewport[1]),
+            (double)viewport[2] / (double)viewport[3],
             0.1f,
             100.0f
     );
-
-    std::cout << "x: " << viewport[0] << std::endl;
-    std::cout << "y: " << viewport[1] << std::endl;
-    std::cout << "x2: " << viewport[2] << std::endl;
-    std::cout << "y2: " << viewport[3] << std::endl;
 
     glMatrixMode(GL_MODELVIEW);
 
     this->paintGL();
 
-    glMatrixMode(GL_PROJECTION);                        // Select The Projection Matrix
-    glPopMatrix();                              // Pop The Projection Matrix
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glFlush();
 
@@ -120,8 +118,13 @@ void GLWidget::checkClick(QMouseEvent *event)
             }
         }
         std::cout << choose << std::endl;
-        this->_objects.at(choose-1)->setScale(0.75);
-        this->update();
+
+        this->selectedIndex = choose-1;
+        this->lastPos = event->pos();
+
+        if (event->buttons() & Qt::LeftButton) {            
+            this->_objects.at(this->selectedIndex)->clicked();
+        }
     }
 
     std::cout << hits << std::endl;
@@ -129,7 +132,68 @@ void GLWidget::checkClick(QMouseEvent *event)
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    //printf("%d, %d\n", event->x(), event->y());
+    if (this->selectedIndex == -1) return;
+
+    if (event->buttons() & Qt::RightButton) {
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT,viewport);
+
+        int dx = event->x() - lastPos.x();
+        int dy = event->y() - lastPos.y();
+
+        qreal depth = (0-this->_objects.at(this->selectedIndex)->getDepth());
+
+        qreal ydepth= depth*tanf(45.0f * M_PI / 360.0)*2;
+        qreal xdepth = ydepth * ((double) viewport[2] / (double) viewport[3]);
+
+
+        this->_objects.at(this->selectedIndex)->setPosition(
+            (double) event->x() / (double)viewport[2] * xdepth - xdepth/2,
+            (double) (viewport[3] - event->y()) / (double)viewport[3] * ydepth -ydepth/2
+        );
+    }
+    lastPos = event->pos();
+}
+
+void GLWidget::rotateX(int rotate)
+{
+    if (this->selectedIndex == -1) return;
+
+    this->_objects.at(this->selectedIndex)->addRotateX(rotate);
+}
+
+void GLWidget::rotateZ(int rotate)
+{
+    if (this->selectedIndex == -1) return;
+
+    this->_objects.at(this->selectedIndex)->addRotateZ(rotate);
+}
+
+void GLWidget::addNewFlag()
+{
+    srand ( time(NULL) );
+    FlagObject* flag = new FlagObject();
+    flag->setPosition(QVector3D(rand() % 10 - 4, rand() % 10 - 4, this->nextDepth));
+    flag->setRotateZ(-10);
+    flag->setScale(.25);
+    flag->setType(0);
+    this->_objects.append(flag);
+
+    QObject::connect(flag, SIGNAL(redraw()), this, SLOT(updateGL()));
+
+    this->nextDepth--;
+    this->updateGL();
+}
+
+void GLWidget::deleteSelectedFlag()
+{
+    if (this->selectedIndex == -1) return;
+
+    this->_objects.removeAt(this->selectedIndex);
+
+    this->selectedIndex = -1;
+
+    this->updateGL();
 }
 
 void GLWidget::keyPressEvent(QKeyEvent *event)
@@ -137,6 +201,24 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     switch(event->key()) {
         case Qt::Key_Escape:
             close();
+            break;
+        case Qt::Key_Up:
+            this->rotateX(5);
+            break;
+        case Qt::Key_Down:
+            this->rotateX(-5);
+            break;
+        case Qt::Key_Left:
+            this->rotateZ(-5);
+            break;
+        case Qt::Key_Right:
+            this->rotateZ(5);
+            break;
+        case Qt::Key_N:
+            this->addNewFlag();
+            break;
+        case Qt::Key_D:
+            this->deleteSelectedFlag();
             break;
         default:
             event->ignore();

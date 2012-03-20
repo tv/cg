@@ -10,8 +10,10 @@ TEMPLATE = app
 SOURCES += main.cpp \
     glwidget.cpp \
     qlobject.cpp \
-    flagobject.cpp
+    flagobject.cpp \
+    mainwindow.cpp
 HEADERS += glwidget.h \
     qlobject.h \
-    flagobject.h
-FORMS += 
+    flagobject.h \
+    mainwindow.h
+FORMS += mainwindow.ui

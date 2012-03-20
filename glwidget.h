@@ -21,11 +21,23 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     void keyPressEvent(QKeyEvent *event);
 
+    void rotateX(int rotate);
+    void rotateY(int rotate);
+    void rotateZ(int rotate);
+
     void checkClick(QMouseEvent *event);
+
+    void addNewFlag();
+    void deleteSelectedFlag();
 
 
     void drawFlag();
 
+    qreal nextDepth;
+
+
+    QPoint lastPos;
+    qreal selectedIndex;
     QList<QLObject*> _objects;
 };
 

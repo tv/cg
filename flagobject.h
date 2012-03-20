@@ -12,6 +12,7 @@ public:
     void draw();
 
     void setType(qreal type);
+
 protected:
     virtual void _drawBase();
     virtual void _drawContent();
@@ -21,7 +22,7 @@ protected:
 signals:
 
 public slots:
-
+    void clicked();
 };
 
 #endif // FLAGOBJECT_H

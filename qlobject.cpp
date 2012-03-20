@@ -5,10 +5,9 @@ QLObject::QLObject(QObject *parent) :
 {
     this->_position = QVector3D(0, 0, -10);
 
-    this->_rotation.angle = 0;
-    this->_rotation.x = 0;
-    this->_rotation.y = 0;
-    this->_rotation.z = 0;
+    this->_rotationX = 0;
+    this->_rotationY = 0;
+    this->_rotationZ = 0;
 
     this->_scale = 1.0;
 }
@@ -17,20 +16,44 @@ void QLObject::setPosition(const QVector3D& value)
 {
     this->_position = value;
     emit positionChanged();
+    emit redraw();
+}
+
+void QLObject::setPosition(const qreal x, const qreal y)
+{
+    this->_position.setX(x);
+    this->_position.setY(y);
+
+    emit positionChanged();
+    emit redraw();
 }
 
 void QLObject::setScale(qreal value)
 {
     this->_scale = value;
     emit scaleChanged();
+    emit redraw();
 }
 
-void QLObject::setRotate(qreal angle, qreal x, qreal y, qreal z)
+void QLObject::setRotateX(qreal angle)
 {
-    this->_rotation.angle = angle;
-    this->_rotation.x = x;
-    this->_rotation.y = y;
-    this->_rotation.z = z;
+    this->_rotationX = angle;
+    emit rotationChanged();
+    emit redraw();
+}
+
+void QLObject::setRotateY(qreal angle)
+{
+    this->_rotationY = angle;
+    emit rotationChanged();
+    emit redraw();
+}
+
+void QLObject::setRotateZ(qreal angle)
+{
+    this->_rotationZ = angle;
+    emit rotationChanged();
+    emit redraw();
 }
 
 void QLObject::draw()
@@ -63,12 +86,9 @@ void QLObject::color(qreal r, qreal g, qreal b)
 
 void QLObject::rotate()
 {
-    glRotatef(
-        this->_rotation.angle,
-        this->_rotation.x,
-        this->_rotation.y,
-        this->_rotation.z
-    );
+    glRotatef(this->_rotationX, 1, 0, 0);
+    glRotatef(this->_rotationY, 0, 1, 0);
+    glRotatef(this->_rotationZ, 0, 0, 1);
 }
 
 void QLObject::move()
@@ -78,4 +98,42 @@ void QLObject::move()
         this->_position.y(),
         this->_position.z()
     );
+}
+
+void QLObject::addRotateX(qreal angle)
+{
+    qreal rotation = this->_rotationX;
+
+    rotation += angle;
+
+    this->setRotateX(rotation);
+}
+
+void QLObject::addRotateY(qreal angle)
+{
+    qreal rotation = this->_rotationY;
+
+    rotation += angle;
+
+    this->setRotateY(rotation);
+}
+
+void QLObject::addRotateZ(qreal angle)
+{
+    qreal rotation = this->_rotationZ;
+
+    rotation += angle;
+
+    this->setRotateZ(rotation);
+}
+
+qreal QLObject::getDepth()
+{
+    return this->_position.z();
+}
+
+
+void QLObject::clicked()
+{
+    std::cout << "Clicked!" << std::endl;
 }
