@@ -28,6 +28,14 @@ void QLObject::setPosition(const qreal x, const qreal y)
     emit redraw();
 }
 
+void QLObject::setDepth(qreal depth)
+{
+    this->_position.setZ(depth);
+
+    emit positionChanged();
+    emit redraw();
+}
+
 void QLObject::setScale(qreal value)
 {
     this->_scale = value;
@@ -100,6 +108,15 @@ void QLObject::move()
     );
 }
 
+void QLObject::addRotate(qreal x, qreal y, qreal z)
+{
+    this->_rotationX += x;
+    this->_rotationY += y;
+    this->_rotationZ += z;
+
+    emit redraw();
+}
+
 void QLObject::addRotateX(qreal angle)
 {
     qreal rotation = this->_rotationX;
@@ -125,6 +142,13 @@ void QLObject::addRotateZ(qreal angle)
     rotation += angle;
 
     this->setRotateZ(rotation);
+}
+
+void QLObject::addDepth(qreal depth)
+{
+    qreal cur = this->_position.z();
+    cur += depth;
+    this->setDepth(cur);
 }
 
 qreal QLObject::getDepth()

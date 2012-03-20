@@ -3,6 +3,7 @@
 FlagObject::FlagObject(QObject *parent) :
     QLObject(parent)
 {
+    this->ignoreClickEvent = false;
 }
 void FlagObject::draw()
 {
@@ -47,14 +48,14 @@ void FlagObject::setType(qreal type)
 {
     this->_type = type;
 
-    emit(redraw());
+    emit redraw();
 }
 
 void FlagObject::_drawContent()
 {
     for (int j = 0; j < 2; j++) {
         // both sides of the flag
-        qreal depth = (j==0)?0.1f:-0.1f;
+        qreal depth = (j==0)?0.01f:-0.01f;
         if (this->_type == 0) {
             this->color(0, 0, 1);
             glBegin(GL_TRIANGLES);
@@ -85,10 +86,10 @@ void FlagObject::_drawContent()
             int r = 3;
 
             for (int i=0; i < 360; i++) {
-                float rad = i*3.14159/180;
+                float rad = i*M_PI/180;
                 this->vertex(9.0f, 5.5f, depth);
                 this->vertex(cos(rad)*r+9.0f, sin(rad)*r+5.5f, depth);
-                rad = (i+1)*3.14159/180;
+                rad = (i+1)*M_PI/180;
                 this->vertex(cos(rad)*r+9.0f, sin(rad)*r+5.5f, depth);
             }
             glEnd();

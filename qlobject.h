@@ -19,13 +19,18 @@ public:
     void setRotateY(qreal angle);
     void setRotateZ(qreal angle);
 
+    void addRotate(qreal x, qreal y, qreal z);
     void addRotateX(qreal angle);
     void addRotateY(qreal angle);
     void addRotateZ(qreal angle);
 
+    bool ignoreClickEvent;
+
     virtual void draw();
     virtual void initialize();
 
+    void addDepth(qreal depth);
+    void setDepth(qreal depth);
     qreal getDepth();
 
 protected:

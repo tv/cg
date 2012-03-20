@@ -4,6 +4,10 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent) {
     setMouseTracking(true);
     this->selectedIndex = -1;
 
+    TextObject* text = new TextObject();
+    text->setParent(this);
+    this->_objects.append(text);
+
     FlagObject* flag = new FlagObject();
     flag->setPosition(QVector3D(0, -2, -18));
     flag->setRotateZ(-10);
@@ -22,6 +26,8 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent) {
     QObject::connect(flag2, SIGNAL(redraw()), this, SLOT(updateGL()));
 
     this->nextDepth = -23;
+
+    this->camera = QVector3D(0,0,0);
 }
 
 void GLWidget::initializeGL()
@@ -54,6 +60,9 @@ void GLWidget::paintGL()
         glLoadName(i+1);
         this->_objects.at(i)->draw();
     }
+
+    glRotatef(this->camera.x(), 0, 1, 0);
+    glRotatef(this->camera.y(), 1, 0, 0);
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
@@ -110,6 +119,9 @@ void GLWidget::checkClick(QMouseEvent *event)
         int choose = select_buf[3];
         int depth = select_buf[1];
 
+        if (this->_objects.at(choose-1)->ignoreClickEvent) {
+            depth = -100;
+        }
         // any other hits?
         for (int i = 1; i < hits; i++) {
             if (select_buf[i*4+1] < GLuint(depth)) {
@@ -117,7 +129,6 @@ void GLWidget::checkClick(QMouseEvent *event)
                 depth = select_buf[i*4+1];
             }
         }
-        std::cout << choose << std::endl;
 
         this->selectedIndex = choose-1;
         this->lastPos = event->pos();
@@ -133,6 +144,13 @@ void GLWidget::checkClick(QMouseEvent *event)
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
     if (this->selectedIndex == -1) return;
+
+    if (event->buttons() & Qt::MidButton) {
+        int dx = event->x() - lastPos.x();
+        int dy = event->y() - lastPos.y();
+
+        this->_objects.at(this->selectedIndex)->addRotate(dx, dy, 0);
+    }
 
     if (event->buttons() & Qt::RightButton) {
         GLint viewport[4];
@@ -196,11 +214,23 @@ void GLWidget::deleteSelectedFlag()
     this->updateGL();
 }
 
+void GLWidget::wheelEvent(QWheelEvent *event)
+{
+    if (this->selectedIndex == -1) return;
+
+    //if (event->orientation() == Qt::Horizontal) {
+        int numDegrees = event->delta() / 8;
+        int numSteps = numDegrees / 15;
+        this->_objects.at(this->selectedIndex)->addDepth(numSteps);
+    //}
+}
+
 void GLWidget::keyPressEvent(QKeyEvent *event)
 {
     switch(event->key()) {
         case Qt::Key_Escape:
-            close();
+            QApplication::exit();
+            QApplication::quit();
             break;
         case Qt::Key_Up:
             this->rotateX(5);

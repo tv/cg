@@ -6,6 +6,7 @@
 #include <QtGui/QMouseEvent>
 #include "qlobject.h"
 
+#include "textobject.h"
 #include "flagobject.h"
 
 class GLWidget : public QGLWidget {
@@ -20,6 +21,7 @@ protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void keyPressEvent(QKeyEvent *event);
+    void wheelEvent(QWheelEvent *event);
 
     void rotateX(int rotate);
     void rotateY(int rotate);
@@ -30,15 +32,14 @@ protected:
     void addNewFlag();
     void deleteSelectedFlag();
 
-
-    void drawFlag();
-
     qreal nextDepth;
 
 
     QPoint lastPos;
     qreal selectedIndex;
     QList<QLObject*> _objects;
+
+    QVector3D camera;
 };
 
 #endif // GLWIDGET_H
