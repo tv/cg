@@ -6,6 +6,8 @@
 #include <QtGui/QMouseEvent>
 #include "qlobject.h"
 
+#include "fileobject.h"
+#include "lightobject.h"
 #include "textobject.h"
 #include "flagobject.h"
 

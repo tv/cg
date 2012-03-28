@@ -10,6 +10,16 @@ QLObject::QLObject(QObject *parent) :
     this->_rotationZ = 0;
 
     this->_scale = 1.0;
+
+    GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
+    GLfloat mat_ambient[] = { 0.7, 0.7, 0.7, 1.0 };
+    GLfloat mat_ambient_color[] = { 0.8, 0.8, 0.2, 1.0 };
+    GLfloat mat_diffuse[] = { 0.1, 0.5, 0.8, 1.0 };
+    GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+    GLfloat no_shininess[] = { 0.0 };
+    GLfloat low_shininess[] = { 5.0 };
+    GLfloat high_shininess[] = { 100.0 };
+    GLfloat mat_emission[] = {0.3, 0.2, 0.2, 0.0};
 }
 
 void QLObject::setPosition(const QVector3D& value)
@@ -72,6 +82,11 @@ void QLObject::initialize()
 {
 }
 
+void QLObject::vertex(QVector3D v1)
+{
+    this->vertex(v1.x(), v1.y(), v1.z());
+}
+
 void QLObject::vertex(qreal x, qreal y)
 {
     qreal _x = x * this->_scale;
@@ -85,6 +100,27 @@ void QLObject::vertex(qreal x, qreal y, qreal z)
     qreal _y = y * this->_scale;
     qreal _z = z * this->_scale;
     glVertex3f(_x, _y, _z);
+}
+
+void QLObject::surface(QVector3D v1, QVector3D v2, QVector3D v3)
+{
+    QVector3D normal = QVector3D::normal(v1, v2, v3);
+
+    glNormal3f(normal.x(), normal.y(), normal.z());
+    this->vertex(v1);
+    this->vertex(v2);
+    this->vertex(v3);
+}
+
+void QLObject::surface(QVector3D v1, QVector3D v2, QVector3D v3, QVector3D v4)
+{
+    QVector3D normal = QVector3D::normal(v1, v2, v3);
+
+    glNormal3f(normal.x(), normal.y(), normal.z());
+    this->vertex(v1);
+    this->vertex(v2);
+    this->vertex(v3);
+    this->vertex(v4);
 }
 
 void QLObject::color(qreal r, qreal g, qreal b)

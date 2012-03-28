@@ -7,7 +7,7 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent) {
     TextObject* text = new TextObject();
     text->setParent(this);
     this->_objects.append(text);
-
+/*
     FlagObject* flag = new FlagObject();
     flag->setPosition(QVector3D(0, -2, -18));
     flag->setRotateZ(-10);
@@ -24,6 +24,32 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent) {
     flag2->setType(1);
     this->_objects.append(flag2);
     QObject::connect(flag2, SIGNAL(redraw()), this, SLOT(updateGL()));
+*/
+
+    FileObject* file1 = new FileObject();
+    file1->readFile("rock.obj");
+    file1->setPosition(QVector3D(-3, 0, -22));
+    file1->setScale(1.5);
+    file1->setMode(1);
+    file1->setRotateZ(15.0);
+    this->_objects.append(file1);
+    QObject::connect(file1, SIGNAL(redraw()), this, SLOT(updateGL()));
+
+    FileObject* file2 = new FileObject();
+    file2->readFile("rock.obj");
+    file2->setPosition(QVector3D(-5, 0, -22));
+    file2->setScale(1.5);
+    file2->setMode(2);
+    file2->setRotateZ(15.0);
+    this->_objects.append(file2);
+    QObject::connect(file2, SIGNAL(redraw()), this, SLOT(updateGL()));
+
+    LightObject* light = new LightObject();
+    light->setScale(.25);
+    light->setPosition(QVector3D(3, 0, -22));
+    this->_objects.append(light);
+
+    QObject::connect(light, SIGNAL(redraw()), this, SLOT(updateGL()));
 
     this->nextDepth = -23;
 
@@ -33,11 +59,16 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent) {
 void GLWidget::initializeGL()
 {
     glShadeModel(GL_SMOOTH);
-    glClearColor(0.1f,0.1f,0.1f,0.1f);
+    glClearColor (0.0, 0.0, 0.0, 0.0);
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT,GL_NICEST);
+
+
+    glEnable(GL_LIGHTING);
+
+    glEnable(GL_COLOR_MATERIAL);
 
 }
 
@@ -54,7 +85,7 @@ void GLWidget::resizeGL(int w, int h)
 
 void GLWidget::paintGL()
 {
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (int i = 0; i < this->_objects.size(); i++) {
         glLoadName(i+1);
@@ -63,6 +94,13 @@ void GLWidget::paintGL()
 
     glRotatef(this->camera.x(), 0, 1, 0);
     glRotatef(this->camera.y(), 1, 0, 0);
+
+    GLenum errCode;
+    const GLubyte *errString;
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        errString = gluErrorString(errCode);
+        qDebug() << "OpenGL Error: " << QString((char*)errString);
+    }
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event)

@@ -41,12 +41,27 @@ protected:
     qreal _rotationY;
     qreal _rotationZ;
 
+    void vertex(QVector3D v1);
     void vertex(qreal x, qreal y);
     void vertex(qreal x, qreal y, qreal z);
     void color(qreal r, qreal g, qreal b);
 
+    void surface(QVector3D v1, QVector3D v2, QVector3D v3);
+    void surface(QVector3D v1, QVector3D v2, QVector3D v3, QVector3D v4);
+
     void rotate();
     void move();
+
+
+    GLfloat no_mat[];
+    GLfloat mat_ambient[];
+    GLfloat mat_ambient_color[];
+    GLfloat mat_diffuse[];
+    GLfloat mat_specular[];
+    GLfloat no_shininess[];
+    GLfloat low_shininess[];
+    GLfloat high_shininess[];
+    GLfloat mat_emission[];
 signals:
     void redraw();
     void rotationChanged();

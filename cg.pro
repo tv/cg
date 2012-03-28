@@ -12,10 +12,14 @@ SOURCES += main.cpp \
     qlobject.cpp \
     flagobject.cpp \
     mainwindow.cpp \
-    textobject.cpp
+    textobject.cpp \
+    fileobject.cpp \
+    lightobject.cpp
 HEADERS += glwidget.h \
     qlobject.h \
     flagobject.h \
     mainwindow.h \
-    textobject.h
+    textobject.h \
+    fileobject.h \
+    lightobject.h
 FORMS += mainwindow.ui
