@@ -57,20 +57,6 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent) {
     this->_objects.append(light);
     QObject::connect(light, SIGNAL(redraw()), this, SLOT(updateGL()));
 
-    FileObject* cube = new FileObject();
-    cube->readFile("cube.obj");
-    cube->setPosition(QVector3D(0, 6, -30));
-    cube->setMaterial(material);
-    this->_objects.append(cube);
-    QObject::connect(cube, SIGNAL(redraw()), this, SLOT(updateGL()));
-
-    FileObject* cube2 = new FileObject();
-    cube2->readFile("dividedcube.obj");
-    cube2->setPosition(QVector3D(0, 0, -30));
-    cube2->setMaterial(material);
-    this->_objects.append(cube2);
-    QObject::connect(cube2, SIGNAL(redraw()), this, SLOT(updateGL()));
-
     this->nextDepth = -23;
 
     this->camera = QVector3D(0,0,0);
@@ -102,10 +88,11 @@ void GLWidget::initializeGL()
 
     glEnable(GL_LIGHTING);
     glEnable(GL_NORMALIZE);
-    glEnable(GL_COLOR_MATERIAL);
+    //glEnable(GL_COLOR_MATERIAL);
 
     QGLShaderProgram* program = new QGLShaderProgram();
     this->_program = program;
+    //this->_program->addShaderFromSourceFile(QGLShader::Geometry, "./shader.gsf");
     this->_program->addShaderFromSourceFile(QGLShader::Vertex, "./shader.vsf");
     this->_program->addShaderFromSourceFile(QGLShader::Fragment, "./shader.fsf");
 
@@ -125,6 +112,7 @@ void GLWidget::resizeGL(int w, int h)
 void GLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
     if (!this->_program->isLinked()) {
         this->_program->bind();

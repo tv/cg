@@ -17,7 +17,9 @@ public:
 
 protected:
     QList<QVector3D*> _vertexes;
-    QList<QVector3D*> _quads;
+    QList<QVector3D*> _vertexNorms;
+
+    QGLBuffer* _vertexBuffer;
 
     int _mode;
 signals:
