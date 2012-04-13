@@ -11,6 +11,9 @@ QLObject::QLObject(QObject *parent) :
 
     this->_scale = 1.0;
 
+    this->_boundingBoxMin = QVector3D(0,0,0);
+    this->_boundingBoxMax = QVector3D(0,0,0);
+
     GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
     GLfloat mat_ambient[] = { 0.7, 0.7, 0.7, 1.0 };
     GLfloat mat_ambient_color[] = { 0.8, 0.8, 0.2, 1.0 };
@@ -74,6 +77,92 @@ void QLObject::setRotateZ(qreal angle)
     emit redraw();
 }
 
+void QLObject::setMaterial(Material material)
+{
+    this->_material = material;
+    emit redraw();
+}
+
+/**
+ * return the depth of hit
+ * return -100.0f if not hit
+ */
+qreal QLObject::isHit(QVector3D position, qreal loopMax)
+{
+    QMatrix4x4 m;
+
+    m.translate(this->_position);
+    m.rotate(this->_rotationX, 1.0f, 0.0f, 0.0f);
+    m.rotate(this->_rotationY, 0.0f, 1.0f, 0.0f);
+    m.rotate(this->_rotationZ, 0.0f, 0.0f, 1.0f);
+
+    QVector3D mapped1 = m.map(this->_boundingBoxMax),
+              mapped2 = m.map(this->_boundingBoxMin),
+              point;
+
+
+    qreal maxX = mapped1.x(),
+          maxY = mapped1.y(),
+          maxZ = mapped1.z(),
+          minX = mapped2.x(),
+          minY = mapped2.y(),
+          minZ = mapped2.z();
+
+    if (minX > maxX) {
+        minX = maxX;
+        maxX = mapped2.x();
+    }
+
+    if (minY > maxY) {
+        minY = maxY;
+        maxY = mapped2.y();
+    }
+
+    if (minZ > maxZ) {
+        minZ = maxZ;
+        maxZ = mapped2.z();
+    }
+    QVector3D max = QVector3D(maxX, maxY, maxZ);
+    QVector3D min = QVector3D(minX, minY, minZ);
+
+    qreal iter = loopMax,
+          i;
+
+    for (i = 1.0f; i < iter; i++) {
+        point = position * i;
+
+        if (point.x() > min.x() && point.y() > min.y() && point.z() > min.z()
+            && point.x() < max.x() && point.y() < max.y() && point.z() < max.z()) {
+
+            break;
+        }
+    }
+    return i;
+}
+
+void QLObject::drawBoundingBox()
+{
+    qreal maX = this->_boundingBoxMin.x(),
+          maY = this->_boundingBoxMin.y(),
+          maZ = this->_boundingBoxMin.z(),
+          miX = this->_boundingBoxMax.x(),
+          miY = this->_boundingBoxMax.y(),
+          miZ = this->_boundingBoxMax.z();
+
+    glPointSize(3.0f);
+    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    glBegin(GL_POINTS);
+    glVertex3f(maX, maY, maZ);
+    glVertex3f(maX, maY, miZ);
+    glVertex3f(maX, miY, miZ);
+    glVertex3f(maX, miY, maZ);
+    glVertex3f(miX, maY, maZ);
+    glVertex3f(miX, maY, miZ);
+    glVertex3f(miX, miY, miZ);
+    glVertex3f(miX, miY, maZ);
+    glEnd();
+}
+
 void QLObject::draw()
 {
 
@@ -99,6 +188,23 @@ void QLObject::vertex(qreal x, qreal y, qreal z)
     qreal _x = x * this->_scale;
     qreal _y = y * this->_scale;
     qreal _z = z * this->_scale;
+
+    qreal _maxBBx = this->_boundingBoxMax.x();
+    qreal _maxBBy = this->_boundingBoxMax.y();
+    qreal _maxBBz = this->_boundingBoxMax.z();
+
+    qreal _minBBx = this->_boundingBoxMin.x();
+    qreal _minBBy = this->_boundingBoxMin.y();
+    qreal _minBBz = this->_boundingBoxMin.z();
+
+    if (_x < _minBBx) this->_boundingBoxMin.setX(_x);
+    if (_y < _minBBy) this->_boundingBoxMin.setY(_y);
+    if (_z < _minBBz) this->_boundingBoxMin.setZ(_z);
+
+    if (_x > _maxBBx) this->_boundingBoxMax.setX(_x);
+    if (_y > _maxBBy) this->_boundingBoxMax.setY(_y);
+    if (_z > _maxBBz) this->_boundingBoxMax.setZ(_z);
+
     glVertex3f(_x, _y, _z);
 }
 

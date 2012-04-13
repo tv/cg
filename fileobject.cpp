@@ -58,32 +58,16 @@ void FileObject::setMode(int mode) {
 void FileObject::draw()
 {
     glPushMatrix();
-glColor4f(0.75, 0.75, 0.75, 0.75);
-    if (this->_mode == 1) {
-        glMaterialf(GL_FRONT, GL_SHININESS, 25.0);
-        glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, no_mat);
-        glMaterialfv(GL_FRONT, GL_SHININESS, no_shininess);
-        glMaterialfv(GL_FRONT, GL_EMISSION, mat_emission);
+    //glColor4f(1.0, 0.75, 0.75, 0.25);
 
 
-    } else {
-        glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-        glMaterialfv(GL_FRONT, GL_SHININESS, low_shininess);
-        glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
-    }
+    this->_material.inject();
 
     this->move();
     this->rotate();
 
+    this->drawBoundingBox();
     int i, length;
-
-
-
-
 
     length = this->_quads.size();
     i = 0;
@@ -97,8 +81,6 @@ glColor4f(0.75, 0.75, 0.75, 0.75);
         glEnd();
         i += 4;
     }
-
-
 
     length = this->_vertexes.size();
     i = 0;

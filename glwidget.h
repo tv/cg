@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <QtOpenGL>
+#include <QGLShaderProgram>
 #include <QtGui/QMouseEvent>
 #include "qlobject.h"
 
@@ -10,6 +11,8 @@
 #include "lightobject.h"
 #include "textobject.h"
 #include "flagobject.h"
+
+#include "material/materialtest.h"
 
 class GLWidget : public QGLWidget {
     Q_OBJECT
@@ -37,9 +40,15 @@ protected:
     qreal nextDepth;
 
 
+    QGLShaderProgram* _program;
+    GLint _shaderTimeLoc;
+    GLfloat _shaderTime;
+
     QPoint lastPos;
     qreal selectedIndex;
     QList<QLObject*> _objects;
+
+    QVector3D nearPoint, farPoint;
 
     QVector3D camera;
 };

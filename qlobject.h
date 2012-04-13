@@ -5,6 +5,7 @@
 #include <QVector3D>
 #include <QtOpenGL>
 #include <iostream>
+#include "material.h"
 
 class QLObject : public QObject
 {
@@ -31,7 +32,12 @@ public:
 
     void addDepth(qreal depth);
     void setDepth(qreal depth);
+    void setMaterial(Material material);
     qreal getDepth();
+
+    qreal isHit(QVector3D position, qreal max);
+
+    void drawBoundingBox();
 
 protected:
     QVector3D _position;
@@ -40,6 +46,8 @@ protected:
     qreal _rotationX;
     qreal _rotationY;
     qreal _rotationZ;
+
+    Material _material;
 
     void vertex(QVector3D v1);
     void vertex(qreal x, qreal y);
@@ -51,6 +59,9 @@ protected:
 
     void rotate();
     void move();
+
+    QVector3D _boundingBoxMax;
+    QVector3D _boundingBoxMin;
 
 
     GLfloat no_mat[];

@@ -3,7 +3,7 @@
 # -------------------------------------------------
 # QT       -= gui
 QT += opengl
-TARGET = hw1
+TARGET = cg
 CONFIG += console
 CONFIG -= app_bundle
 TEMPLATE = app
@@ -14,12 +14,19 @@ SOURCES += main.cpp \
     mainwindow.cpp \
     textobject.cpp \
     fileobject.cpp \
-    lightobject.cpp
+    lightobject.cpp \
+    material.cpp \
+    material/materialtest.cpp
 HEADERS += glwidget.h \
     qlobject.h \
     flagobject.h \
     mainwindow.h \
     textobject.h \
     fileobject.h \
-    lightobject.h
+    lightobject.h \
+    material.h \
+    material/materialtest.h
 FORMS += mainwindow.ui
+OTHER_FILES += shader.vsf \
+    shader.fsf \
+    backwall.obj
