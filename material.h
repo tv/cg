@@ -2,11 +2,16 @@
 #define MATERIAL_H
 #include <QObject>
 #include <QtOpenGL>
+
+//#include "glwidget.h"
+
 class Material
 {
 public:
     Material();
     void inject();
+    void injectToShader(QGLShaderProgram* p);
+
 
 protected:
     GLfloat _ambient[4];

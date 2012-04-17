@@ -10,23 +10,24 @@ TEMPLATE = app
 SOURCES += main.cpp \
     glwidget.cpp \
     qlobject.cpp \
-    flagobject.cpp \
     mainwindow.cpp \
     textobject.cpp \
     fileobject.cpp \
     lightobject.cpp \
     material.cpp \
-    material/materialtest.cpp
+    material/materialtest.cpp \
+    light.cpp
 HEADERS += glwidget.h \
     qlobject.h \
-    flagobject.h \
     mainwindow.h \
     textobject.h \
     fileobject.h \
     lightobject.h \
     material.h \
-    material/materialtest.h
+    material/materialtest.h \
+    light.h
 FORMS += mainwindow.ui
 OTHER_FILES += shader.vsf \
-    shader.fsf \
-    backwall.obj
+    shader.g.glsl \
+    shader.f.glsl \
+    shader.v.glsl

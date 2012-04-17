@@ -1,28 +1,78 @@
 #include "qlobject.h"
 
+#define BUFFER_OFFSET(i) (reinterpret_cast<void*>(i))
+
 QLObject::QLObject(QObject *parent) :
     QObject(parent)
 {
-    this->_position = QVector3D(0, 0, -10);
-
-    this->_rotationX = 0;
-    this->_rotationY = 0;
-    this->_rotationZ = 0;
-
-    this->_scale = 1.0;
-
+    this->_initialized = false;
     this->_boundingBoxMin = QVector3D(0,0,0);
     this->_boundingBoxMax = QVector3D(0,0,0);
 
-    GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
-    GLfloat mat_ambient[] = { 0.7, 0.7, 0.7, 1.0 };
-    GLfloat mat_ambient_color[] = { 0.8, 0.8, 0.2, 1.0 };
-    GLfloat mat_diffuse[] = { 0.1, 0.5, 0.8, 1.0 };
-    GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-    GLfloat no_shininess[] = { 0.0 };
-    GLfloat low_shininess[] = { 5.0 };
-    GLfloat high_shininess[] = { 100.0 };
-    GLfloat mat_emission[] = {0.3, 0.2, 0.2, 0.0};
+    // Old stuff, should be removed some time
+    // Matrix mode is not ready yet...
+    this->_position = QVector3D(0, 0, -10);
+    this->_rotationX = 0;
+    this->_rotationY = 0;
+    this->_rotationZ = 0;
+    this->_scale = 1.0;
+}
+
+void QLObject::_initialize()
+{
+}
+
+void QLObject::draw()
+{
+    if (!this->_initialized) {
+        this->_initialize();
+    }
+    QGLShaderProgram* p = this->getShader();
+
+    this->_material.injectToShader(p);
+
+
+    QMatrix4x4 trans = this->getTransformationMatrix();
+    p->setUniformValue("m", trans);
+    p->setUniformValue("m_3x3_inv_transp", trans.normalMatrix());
+
+    this->_vertexBuffer->bind();
+
+    p->enableAttributeArray("v_coord");
+    p->enableAttributeArray("v_normal");
+
+    p->setAttributeBuffer(
+        "v_coord",
+        GL_FLOAT,
+        0 * sizeof(GLfloat),
+        3,
+        6 * sizeof(GLfloat)
+    );
+
+    p->setAttributeBuffer(
+        "v_normal",
+        GL_FLOAT,
+        3 * sizeof(GLfloat),
+        3,
+        6 * sizeof(GLfloat)
+    );
+    glDrawArrays(GL_TRIANGLES, 0, this->_vertexBuffer->size() / (sizeof(GLfloat)));
+
+    p->disableAttributeArray("v_coord");
+    p->disableAttributeArray("v_normal");
+
+    this->_vertexBuffer->release();
+
+}
+
+void QLObject::setShader(QGLShaderProgram* prog)
+{
+    this->_prog = prog;
+}
+
+QGLShaderProgram* QLObject::getShader()
+{
+    return this->_prog;
 }
 
 void QLObject::setPosition(const QVector3D& value)
@@ -32,14 +82,7 @@ void QLObject::setPosition(const QVector3D& value)
     emit redraw();
 }
 
-void QLObject::setPosition(const qreal x, const qreal y)
-{
-    this->_position.setX(x);
-    this->_position.setY(y);
 
-    emit positionChanged();
-    emit redraw();
-}
 
 void QLObject::setDepth(qreal depth)
 {
@@ -83,18 +126,27 @@ void QLObject::setMaterial(Material material)
     emit redraw();
 }
 
+QMatrix4x4 QLObject::getTransformationMatrix()
+{
+    QMatrix4x4 m = QMatrix4x4();
+
+    m.setToIdentity();
+
+    m.translate(this->_position);
+    m.rotate(this->_rotationX, 1.0f, 0.0f, 0.0f);
+    m.rotate(this->_rotationY, 0.0f, 1.0f, 0.0f);
+    m.rotate(this->_rotationZ, 0.0f, 0.0f, 1.0f);
+    m.scale(this->_scale);
+    return m;
+}
+
 /**
  * return the depth of hit
  * return -100.0f if not hit
  */
 qreal QLObject::isHit(QVector3D position, qreal loopMax)
 {
-    QMatrix4x4 m;
-
-    m.translate(this->_position);
-    m.rotate(this->_rotationX, 1.0f, 0.0f, 0.0f);
-    m.rotate(this->_rotationY, 0.0f, 1.0f, 0.0f);
-    m.rotate(this->_rotationZ, 0.0f, 0.0f, 1.0f);
+    QMatrix4x4 m = this->getTransformationMatrix();
 
     QVector3D mapped1 = m.map(this->_boundingBoxMax),
               mapped2 = m.map(this->_boundingBoxMin),
@@ -163,91 +215,8 @@ void QLObject::drawBoundingBox()
     glEnd();
 }
 
-void QLObject::draw()
+void QLObject::animate()
 {
-
-}
-void QLObject::initialize()
-{
-}
-
-void QLObject::vertex(QVector3D v1)
-{
-    this->vertex(v1.x(), v1.y(), v1.z());
-}
-
-void QLObject::vertex(qreal x, qreal y)
-{
-    qreal _x = x * this->_scale;
-    qreal _y = y * this->_scale;
-    glVertex2f(_x, _y);
-}
-
-void QLObject::vertex(qreal x, qreal y, qreal z)
-{
-    qreal _x = x * this->_scale;
-    qreal _y = y * this->_scale;
-    qreal _z = z * this->_scale;
-
-    qreal _maxBBx = this->_boundingBoxMax.x();
-    qreal _maxBBy = this->_boundingBoxMax.y();
-    qreal _maxBBz = this->_boundingBoxMax.z();
-
-    qreal _minBBx = this->_boundingBoxMin.x();
-    qreal _minBBy = this->_boundingBoxMin.y();
-    qreal _minBBz = this->_boundingBoxMin.z();
-
-    if (_x < _minBBx) this->_boundingBoxMin.setX(_x);
-    if (_y < _minBBy) this->_boundingBoxMin.setY(_y);
-    if (_z < _minBBz) this->_boundingBoxMin.setZ(_z);
-
-    if (_x > _maxBBx) this->_boundingBoxMax.setX(_x);
-    if (_y > _maxBBy) this->_boundingBoxMax.setY(_y);
-    if (_z > _maxBBz) this->_boundingBoxMax.setZ(_z);
-
-    glVertex3f(_x, _y, _z);
-}
-
-void QLObject::surface(QVector3D v1, QVector3D v2, QVector3D v3)
-{
-    QVector3D normal = QVector3D::normal(v1, v2, v3);
-
-    glNormal3f(normal.x(), normal.y(), normal.z());
-    this->vertex(v1);
-    this->vertex(v2);
-    this->vertex(v3);
-}
-
-void QLObject::surface(QVector3D v1, QVector3D v2, QVector3D v3, QVector3D v4)
-{
-    QVector3D normal = QVector3D::normal(v1, v2, v3);
-
-    glNormal3f(normal.x(), normal.y(), normal.z());
-    this->vertex(v1);
-    this->vertex(v2);
-    this->vertex(v3);
-    this->vertex(v4);
-}
-
-void QLObject::color(qreal r, qreal g, qreal b)
-{
-    glColor3f(r,g,b);
-}
-
-void QLObject::rotate()
-{
-    glRotatef(this->_rotationX, 1, 0, 0);
-    glRotatef(this->_rotationY, 0, 1, 0);
-    glRotatef(this->_rotationZ, 0, 0, 1);
-}
-
-void QLObject::move()
-{
-    glTranslatef(
-        this->_position.x(),
-        this->_position.y(),
-        this->_position.z()
-    );
 }
 
 void QLObject::addRotate(qreal x, qreal y, qreal z)

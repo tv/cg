@@ -17,10 +17,10 @@ MaterialTest::MaterialTest()
     this->_diffuse[2] = 0.0f;
     this->_diffuse[3] = 1.0f;
 
-    this->_emission[0] = 1.0f;
+    this->_emission[0] = 0.0f;
     this->_emission[1] = 0.0f;
     this->_emission[2] = 0.0f;
-    this->_emission[3] = 1.0f;
+    this->_emission[3] = 0.0f;
 
     this->_shininess = 3.0f;
 }

@@ -4,6 +4,8 @@ FileObject::FileObject(QObject *parent) :
     QLObject(parent)
 {
     this->ignoreClickEvent = false;
+
+    this->_initialized = false;
     this->_mode = 2;
 }
 
@@ -84,22 +86,8 @@ void FileObject::readFile(QString path) {
 
 }
 
-void FileObject::setMode(int mode) {
-    this->_mode = mode;
-}
-
-void FileObject::draw()
+void FileObject::_initialize()
 {
-    glPushMatrix();
-
-    this->_material.inject();
-
-    this->move();
-    this->rotate();
-
-    this->drawBoundingBox();
-
-
     if (this->_vertexes.size() > 0) {
         if (!this->_vertexBuffer->isCreated()) {
 
@@ -108,7 +96,7 @@ void FileObject::draw()
             this->_vertexBuffer->create();
 
             this->_vertexBuffer->bind();
-            this->_vertexBuffer->setUsagePattern(QGLBuffer::DynamicDraw);
+            this->_vertexBuffer->setUsagePattern(QGLBuffer::StaticDraw);
             this->_vertexBuffer->allocate(2 * 3 * size * sizeof(GLfloat));
 
             GLfloat* qs = (GLfloat*)this->_vertexBuffer->map(QGLBuffer::ReadWrite);
@@ -149,22 +137,5 @@ void FileObject::draw()
 
             this->_vertexBuffer->unmap();
         }
-
-        this->_vertexBuffer->bind();
-
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_NORMAL_ARRAY);
-        glVertexPointer(3, GL_FLOAT, 6*sizeof(GLfloat), BUFFER_OFFSET(0));
-        glNormalPointer(GL_FLOAT, 6*sizeof(GLfloat), BUFFER_OFFSET(3*sizeof(GLfloat)));
-
-        glDrawArrays(GL_TRIANGLES, 0, this->_vertexes.size());
-
-        glDisableClientState(GL_VERTEX_ARRAY);
-        glDisableClientState(GL_NORMAL_ARRAY);
-
-        this->_vertexBuffer->release();
     }
-
-
-    glPopMatrix();
 }

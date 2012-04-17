@@ -11,15 +11,11 @@ public:
     explicit FileObject(QObject *parent = 0);
 
     void readFile(QString path);
-
-    void draw();
-    void setMode(int mode);
-
 protected:
     QList<QVector3D*> _vertexes;
     QList<QVector3D*> _vertexNorms;
 
-    QGLBuffer* _vertexBuffer;
+    virtual void _initialize();
 
     int _mode;
 signals:
