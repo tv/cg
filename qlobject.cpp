@@ -29,7 +29,7 @@ void QLObject::draw()
     }
     QGLShaderProgram* p = this->getShader();
 
-    this->_material.injectToShader(p);
+    this->_materials.at(0)->injectToShader(p);
 
 
     QMatrix4x4 trans = this->getTransformationMatrix();
@@ -120,9 +120,9 @@ void QLObject::setRotateZ(qreal angle)
     emit redraw();
 }
 
-void QLObject::setMaterial(Material material)
+void QLObject::setMaterial(Material* material)
 {
-    this->_material = material;
+    this->_materials.append(material);
     emit redraw();
 }
 

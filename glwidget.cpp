@@ -58,8 +58,8 @@ void GLWidget::_append(QLObject* obj)
 
 void GLWidget::initializeObjects()
 {
-    MaterialTest testMaterial;
-    Material material;
+    MaterialTest* testMaterial = new MaterialTest();
+    Material* material = new Material();
 
     FileObject* obj = new FileObject();
     obj->readFile("rock.obj");
@@ -78,13 +78,12 @@ void GLWidget::initializeObjects()
     FileObject* room = new FileObject();
     room->readFile("room.obj");
     room->setPosition(QVector3D(0, -5, -25));
-    room->setScale(6.0f);
+    room->setScale(7.0f);
     room->setMaterial(material);
     this->_append(room);
 
 
     Light* light = new Light();
-
     this->_lights.append(light);
 
     QObject::connect(light, SIGNAL(redraw()), this, SLOT(updateGL()));

@@ -22,13 +22,13 @@ void FileObject::readFile(QString path) {
     QTextStream stream(&myFile);
     QList<QVector3D*> vertexTemp, normTemp;
 
+    QList<QString> mtlTemp;
+
     do {
         line = stream.readLine();
+        QStringList list = line.split(' ');
 
         if (line.startsWith("vn")) {
-            QStringList list = line.split(' ');
-
-
             QVector3D* vector = new QVector3D(
                 list.at(1).toFloat(),
                 list.at(2).toFloat(),
@@ -36,9 +36,11 @@ void FileObject::readFile(QString path) {
             );
 
             normTemp.append(vector);
-        } else if (line.startsWith('v')) {
-            QStringList list = line.split(' ');
 
+        } else if (line.startsWith("mtllib")) {
+            mtlTemp.append(list.at(1));
+
+        } else if (line.startsWith('v')) {
             QVector3D* vector = new QVector3D(
                 list.at(1).toFloat(),
                 list.at(2).toFloat(),
@@ -66,9 +68,8 @@ void FileObject::readFile(QString path) {
             if (_z > _maxBBz) this->_boundingBoxMax.setZ(_z);
 
             vertexTemp.append(vector);
-        } else if (line.startsWith('f')) {
-            QStringList list = line.split(' ');
 
+        } else if (line.startsWith('f')) {
             for (int i = 1; i < list.size(); i++) {
                 int vert = list.at(i).section('/', 0, 0).toInt();
                 int normal = list.at(i).section('/', 2, 2).toInt();
@@ -81,6 +82,71 @@ void FileObject::readFile(QString path) {
             }
         }
     } while (!line.isNull());
+
+    for (int i = 0; i < mtlTemp.size(); i++) {
+
+        QFile myFile(mtlTemp.at(i));
+
+        QString line;
+
+        if (!myFile.open(QIODevice::ReadOnly)) {
+            std::cout << "Error reading file" << std::endl;
+            return;
+        }
+
+        QTextStream mtlStream(&myFile);
+
+        Material* mat = new Material();
+        int i;
+        bool firstSet = false;
+        bool currentSet = true;
+        do {
+            line = mtlStream.readLine();
+            QStringList list = line.split(' ');
+
+            if (line.startsWith("newmtl")) {
+
+                if (!firstSet) {
+                    this->_materials.append(mat);
+
+                    mat = new Material();
+                    firstSet = true;
+                    currentSet = true;
+                }
+
+                mat->name = list.at(1);
+            } else if (line.startsWith("Ka")) {
+                for (i = 1; i < list.size(); i++) {
+                    mat->ambient[i-1] = list.at(i).toFloat();
+                }
+                currentSet = false;
+            } else if (line.startsWith("Kd")) {
+                for (i = 1; i < list.size(); i++) {
+                    mat->diffuse[i-1] = list.at(i).toFloat();
+                }
+                currentSet = false;
+            } else if (line.startsWith("Ks")) {
+                for (i = 1; i < list.size(); i++) {
+                    mat->specular[i-1] = list.at(i).toFloat();
+                }
+                currentSet = false;
+            } else if (line.startsWith("Ks")) {
+                for (i = 1; i < list.size(); i++) {
+                    mat->specular[i-1] = list.at(i).toFloat();
+                }
+                currentSet = false;
+            } else if (line.startsWith("Ns")) {
+                mat->specular[3] = list.at(1).toFloat();
+                currentSet = false;
+            }
+
+
+        } while (!line.isNull());
+
+        if (!currentSet) {
+            this->_materials.append(mat);
+        }
+    }
 
     this->_vertexBuffer = new QGLBuffer(QGLBuffer::VertexBuffer);
 
@@ -138,4 +204,6 @@ void FileObject::_initialize()
             this->_vertexBuffer->unmap();
         }
     }
+
+    this->_initialized = true;
 }

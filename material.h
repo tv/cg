@@ -9,17 +9,18 @@ class Material
 {
 public:
     Material();
-    void inject();
     void injectToShader(QGLShaderProgram* p);
 
+    GLfloat ambient[4];
+    GLfloat diffuse[4];
+    GLfloat emission[4];
+    GLfloat specular[4];
+    GLfloat shininess;
+    QString name;
 
 protected:
-    GLfloat _ambient[4];
-    GLfloat _diffuse[4];
-    GLfloat _emission[4];
-    GLfloat _specular[4];
 
-    GLfloat _shininess;
+
 };
 
 #endif // MATERIAL_H

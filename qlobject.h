@@ -33,7 +33,7 @@ public:
 
     void addDepth(qreal depth);
     void setDepth(qreal depth);
-    void setMaterial(Material material);
+    void setMaterial(Material* material);
     qreal getDepth();
 
     qreal isHit(QVector3D position, qreal max);
@@ -60,7 +60,7 @@ protected:
     qreal _rotationZ;
     // ..
 
-    Material _material;
+    QVector<Material*> _materials;
 
     void rotate();
     void move();
