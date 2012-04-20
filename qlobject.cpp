@@ -24,19 +24,42 @@ void QLObject::_initialize()
 
 void QLObject::draw()
 {
+    GLenum errCode;
+    const GLubyte *errString;
+
     if (!this->_initialized) {
         this->_initialize();
     }
     QGLShaderProgram* p = this->getShader();
 
-    this->_materials.at(0)->injectToShader(p);
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        errString = gluErrorString(errCode);
+        qDebug() << "QLobject  before inject materials OpenGL Error: " << QString((char*)errString);
+    }
 
+    if (p->uniformLocation("in_material") != -1) {
+        this->_materials.at(0)->injectToShader(p);
+
+        if ((errCode = glGetError()) != GL_NO_ERROR) {
+            errString = gluErrorString(errCode);
+            qDebug() << "QLobject before bind  OpenGL Error: " << QString((char*)errString);
+
+        }
+    }
 
     QMatrix4x4 trans = this->getTransformationMatrix();
     p->setUniformValue("m", trans);
     p->setUniformValue("m_3x3_inv_transp", trans.normalMatrix());
 
     this->_vertexBuffer->bind();
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+
+        errString = gluErrorString(errCode);
+        qDebug() << "QLobject  after bind  OpenGL Error: " << QString((char*)errString);
+        return;
+
+    }
 
     p->enableAttributeArray("v_coord");
     p->enableAttributeArray("v_normal");
@@ -58,6 +81,10 @@ void QLObject::draw()
     );
     glDrawArrays(GL_TRIANGLES, 0, this->_vertexBuffer->size() / (sizeof(GLfloat)));
 
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        errString = gluErrorString(errCode);
+        qDebug() << "QLobject  after draw OpenGL Error: " << QString((char*)errString);
+    }
     p->disableAttributeArray("v_coord");
     p->disableAttributeArray("v_normal");
 

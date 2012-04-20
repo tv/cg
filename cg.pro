@@ -30,4 +30,8 @@ FORMS += mainwindow.ui
 OTHER_FILES += shader.vsf \
     shader.g.glsl \
     shader.f.glsl \
-    shader.v.glsl
+    shader.v.glsl \
+    shadow.v.glsl \
+    shadow.f.glsl \
+    blur.f.glsl \
+    blur.v.glsl

@@ -1,6 +1,12 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
 
+#define GL_GLEXT_PROTOTYPES true
+
+#include "GL/gl.h"
+#include "GL/glu.h"
+#include "GL/glext.h"
+
 #include <iostream>
 #include <QtOpenGL>
 #include <QGLShaderProgram>
@@ -21,6 +27,7 @@ public:
 protected:
     void initializeGL();
     void initializeObjects();
+    void initializeFBO();
     void resizeGL(int w, int h);
     void paintGL();
     void mousePressEvent(QMouseEvent *event);
@@ -38,7 +45,9 @@ protected:
     QPoint lastPos;
     void _append(QLObject* obj);
 
+
     QGLShaderProgram* _program;
+
 
     qreal selectedIndex;
     QList<QLObject*> _objects;
@@ -46,6 +55,25 @@ protected:
     QList<Light*> _lights;
 
     QTimer *_timer;
+
+
+    // Shadow buffers
+
+    QGLShaderProgram* _shadowProgram;
+    QGLShaderProgram* _blurProgram;
+    bool initializedFBO;
+    float shadowMapCoef;
+    float blurCoef;
+
+    GLuint fboId;
+    GLuint depthTextureId;
+    GLuint colorTextureId;
+
+    GLuint blurFboId;
+    GLuint blurFboIdColorTextureId;
+    void blurShadowMap(void);
+
+
 public slots:
     void animate();
 signals:

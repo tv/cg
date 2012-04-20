@@ -1,9 +1,17 @@
 #version 330
 
-varying vec4 position;  // position of the vertex (and fragment) in world space
-varying vec3 varyingNormalDirection;  // surface normal vector in world space
+varying vec4 position;
+varying vec3 vnormalDirection;
+
+varying vec4 ShadowCoord;
+
+uniform sampler2D ShadowMap;
+
 uniform mat4 m, v, p;
 uniform mat4 v_inv;
+
+uniform bool noFragment;
+
 
 uniform float[20] in_light0;
 uniform float[17] in_material;
@@ -33,8 +41,35 @@ Light lights[numberOfLights];
 vec4 scene_ambient = vec4(0.02, 0.02, 0.02, 1.0);
 
 
+float chebyshevUpperBound(vec4 SC)
+{
+    vec4 SCpP = SC / SC.w;
+
+    float distance = ShadowCoord.z;
+    vec2 moments = texture2D(ShadowMap, SCpP.xy).rg;
+
+    if (distance <= moments.x) {
+        return 1.0;
+    }
+
+    float variance = moments.y - (moments.x*moments.x);
+    variance = max(variance, 0.00002);
+
+    float d = distance - moments.x;
+
+    return variance / (variance + d*d);
+}
+
 void main(void)
 {
+    Material frontMaterial = Material(
+        vec4(in_material[0], in_material[1], in_material[2], in_material[3]),
+        vec4(in_material[4], in_material[5], in_material[6], in_material[7]),
+        vec4(in_material[8], in_material[9], in_material[10], in_material[11]),
+        vec4(in_material[12], in_material[13], in_material[14], in_material[15]),
+        in_material[16]
+    );
+
     lights[0] = Light(
         vec4(in_light0[0], in_light0[1], in_light0[2], in_light0[3]),
         vec4(in_light0[4], in_light0[5], in_light0[6], in_light0[7]),
@@ -44,20 +79,16 @@ void main(void)
         vec3(in_light0[17], in_light0[18], in_light0[19])
     );
 
-    Material frontMaterial = Material(
-        vec4(in_material[0], in_material[1], in_material[2], in_material[3]),
-        vec4(in_material[4], in_material[5], in_material[6], in_material[7]),
-        vec4(in_material[8], in_material[9], in_material[10], in_material[11]),
-        vec4(in_material[12], in_material[13], in_material[14], in_material[15]),
-        in_material[16]
-    );
 
-    vec3 normalDirection = normalize(varyingNormalDirection);
+
+    vec3 normalDirection = normalize(vnormalDirection);
     vec3 viewDirection = normalize(vec3(v_inv * vec4(0.0, 0.0, 0.0, 1.0) - position));
     vec3 lightDirection;
     float attenuation;
 
     vec3 combinedLightning = vec3(scene_ambient) * vec3(frontMaterial.ambient);
+
+    float shadow = chebyshevUpperBound(ShadowCoord);
 
     for (int i = 0; i < numberOfLights; i++) {
 
@@ -104,5 +135,5 @@ void main(void)
 
 
 
-    gl_FragColor = vec4(combinedLightning, 1.0);
+    gl_FragColor = shadow* vec4(combinedLightning, 1.0);
 }
