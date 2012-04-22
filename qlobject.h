@@ -26,7 +26,7 @@ public:
 
     bool ignoreClickEvent;
 
-    virtual void draw();
+    virtual void injectToShader(QGLShaderProgram *p);
 
 
     QMatrix4x4 getTransformationMatrix();
@@ -40,13 +40,7 @@ public:
 
     void drawBoundingBox();
 
-    void setShader(QGLShaderProgram* prog);
-
-    QGLShaderProgram* getShader();
-
 protected:
-    QGLShaderProgram* _prog;
-
     bool _initialized;
     virtual void _initialize();
 

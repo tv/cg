@@ -22,7 +22,7 @@ void QLObject::_initialize()
 {
 }
 
-void QLObject::draw()
+void QLObject::injectToShader(QGLShaderProgram *p)
 {
     GLenum errCode;
     const GLubyte *errString;
@@ -30,7 +30,6 @@ void QLObject::draw()
     if (!this->_initialized) {
         this->_initialize();
     }
-    QGLShaderProgram* p = this->getShader();
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
         errString = gluErrorString(errCode);
@@ -90,16 +89,6 @@ void QLObject::draw()
 
     this->_vertexBuffer->release();
 
-}
-
-void QLObject::setShader(QGLShaderProgram* prog)
-{
-    this->_prog = prog;
-}
-
-QGLShaderProgram* QLObject::getShader()
-{
-    return this->_prog;
 }
 
 void QLObject::setPosition(const QVector3D& value)

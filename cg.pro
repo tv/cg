@@ -11,21 +11,19 @@ SOURCES += main.cpp \
     glwidget.cpp \
     qlobject.cpp \
     mainwindow.cpp \
-    textobject.cpp \
     fileobject.cpp \
-    lightobject.cpp \
     material.cpp \
     material/materialtest.cpp \
-    light.cpp
+    light.cpp \
+    camera.cpp
 HEADERS += glwidget.h \
     qlobject.h \
     mainwindow.h \
-    textobject.h \
     fileobject.h \
-    lightobject.h \
     material.h \
     material/materialtest.h \
-    light.h
+    light.h \
+    camera.h
 FORMS += mainwindow.ui
 OTHER_FILES += shader.vsf \
     shader.g.glsl \

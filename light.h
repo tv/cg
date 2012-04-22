@@ -6,6 +6,7 @@
 #include <QVector4D>
 #include <QtOpenGL>
 
+#include "camera.h"
 
 class Light : public QObject
 {
@@ -13,17 +14,19 @@ Q_OBJECT
 public:
     explicit Light(QObject *parent = 0);
 
-    void outputFormat(QGLShaderProgram *p, QString name);
+    void injectToShader(QGLShaderProgram *p, int key);
 
-    QVector4D position;
     QVector4D diffuse;
     QVector4D specular;
 
     QVector3D attenuations;
 
-    QVector3D direction;
-
     float spotCutOff, spotExponent;
+
+    float simpleLight;
+
+    void setCamera(Camera* cam);
+    Camera* camera;
 protected:
     qreal angle;
 signals:

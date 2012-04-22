@@ -22,6 +22,8 @@ void FileObject::readFile(QString path) {
     QTextStream stream(&myFile);
     QList<QVector3D*> vertexTemp, normTemp;
 
+    QString material;
+
     QList<QString> mtlTemp;
 
     do {
@@ -80,6 +82,8 @@ void FileObject::readFile(QString path) {
                     this->_vertexNorms.insert(this->_vertexes.size(), normTemp.at(normal-1));
                 }
             }
+        } else if (line.startsWith("usemtl")) {
+            material = list.at(1);
         }
     } while (!line.isNull());
 
@@ -98,7 +102,7 @@ void FileObject::readFile(QString path) {
 
         Material* mat = new Material();
         int i;
-        bool firstSet = false;
+        bool firstMaterial = true;
         bool currentSet = true;
         do {
             line = mtlStream.readLine();
@@ -106,12 +110,14 @@ void FileObject::readFile(QString path) {
 
             if (line.startsWith("newmtl")) {
 
-                if (!firstSet) {
-                    this->_materials.append(mat);
-
+                currentSet = true;
+                if (firstMaterial) {
+                    firstMaterial = false;
+                } else {
+                    if (material == mat->name) {
+                        this->_materials.append(mat);
+                    }
                     mat = new Material();
-                    firstSet = true;
-                    currentSet = true;
                 }
 
                 mat->name = list.at(1);
@@ -144,7 +150,9 @@ void FileObject::readFile(QString path) {
         } while (!line.isNull());
 
         if (!currentSet) {
-            this->_materials.append(mat);
+            if (material == mat->name) {
+                this->_materials.append(mat);
+            }
         }
     }
 
@@ -204,6 +212,9 @@ void FileObject::_initialize()
             this->_vertexBuffer->unmap();
         }
     }
+
+    this->_vertexes.clear();
+    this->_vertexNorms.clear();
 
     this->_initialized = true;
 }

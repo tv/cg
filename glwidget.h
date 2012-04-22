@@ -18,6 +18,7 @@
 #include "light.h"
 
 #include "material/materialtest.h"
+#include "camera.h"
 
 class GLWidget : public QGLWidget {
     Q_OBJECT
@@ -35,8 +36,6 @@ protected:
     void keyPressEvent(QKeyEvent *event);
     void wheelEvent(QWheelEvent *event);
 
-    QMatrix4x4 getPerspective();
-    QMatrix4x4 getView();
     qreal _screenWidth;
     qreal _screenHeight;
 
@@ -48,17 +47,22 @@ protected:
 
     QGLShaderProgram* _program;
 
+    void drawObjects(QGLShaderProgram * p, Camera *cam);
+
 
     qreal selectedIndex;
     QList<QLObject*> _objects;
-
     QList<Light*> _lights;
 
     QTimer *_timer;
+    Camera *camera;
 
+
+    int debugMode;
 
     // Shadow buffers
 
+    QGLBuffer* blurVBO;
     QGLShaderProgram* _shadowProgram;
     QGLShaderProgram* _blurProgram;
     bool initializedFBO;
@@ -73,6 +77,11 @@ protected:
     GLuint blurFboIdColorTextureId;
     void blurShadowMap(void);
 
+    bool showDebug;
+    bool blurEnabled;
+    bool shadowEnabled;
+
+    void generateShadowMap();
 
 public slots:
     void animate();

@@ -12,7 +12,7 @@ Material::Material()
     this->specular[2] = 0.4f;
     this->specular[3] = 1.0f;
 
-    this->diffuse[0] = 0.4f;
+    this->diffuse[0] = 1.0f;
     this->diffuse[1] = 0.4f;
     this->diffuse[2] = 0.4f;
     this->diffuse[3] = 1.0f;
