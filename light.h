@@ -23,10 +23,11 @@ public:
 
     float spotCutOff, spotExponent;
 
-    float simpleLight;
-
     void setCamera(Camera* cam);
     Camera* camera;
+
+    void updateProjection(double aspect);
+
 protected:
     qreal angle;
 signals:

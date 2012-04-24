@@ -11,15 +11,22 @@ public:
     Material();
     void injectToShader(QGLShaderProgram* p);
 
-    GLfloat ambient[4];
-    GLfloat diffuse[4];
-    GLfloat emission[4];
-    GLfloat specular[4];
-    GLfloat shininess;
-    QString name;
+    void loadTestMaterial();
+
+    void setAmbient(QVector4D in);
+    void setSpecular(QVector4D in);
+    void setDiffuse(QVector4D in);
+    void setEmission(QVector4D in);
+    void setShihiness(GLfloat in);
+
+
 
 protected:
-
+    QVector4D ambient;
+    QVector4D diffuse;
+    QVector4D emission;
+    QVector4D specular;
+    GLfloat shininess;
 
 };
 

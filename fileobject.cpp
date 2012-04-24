@@ -6,7 +6,8 @@ FileObject::FileObject(QObject *parent) :
     this->ignoreClickEvent = false;
 
     this->_initialized = false;
-    this->_mode = 2;
+
+    this->_vertexBuffer = new QGLBuffer(QGLBuffer::VertexBuffer);
 }
 
 void FileObject::readFile(QString path) {
@@ -20,11 +21,14 @@ void FileObject::readFile(QString path) {
     }
 
     QTextStream stream(&myFile);
-    QList<QVector3D*> vertexTemp, normTemp;
+    QList<QVector4D*> vertexTemp;
+    QList<QVector3D*> normTemp;
 
     QString material;
 
     QList<QString> mtlTemp;
+
+    GLfloat materialId = 0;
 
     do {
         line = stream.readLine();
@@ -38,15 +42,15 @@ void FileObject::readFile(QString path) {
             );
 
             normTemp.append(vector);
-
         } else if (line.startsWith("mtllib")) {
             mtlTemp.append(list.at(1));
 
         } else if (line.startsWith('v')) {
-            QVector3D* vector = new QVector3D(
+            QVector4D* vector = new QVector4D(
                 list.at(1).toFloat(),
                 list.at(2).toFloat(),
-                list.at(3).toFloat()
+                list.at(3).toFloat(),
+                1.0f
             );
 
             qreal _x = vector->x();
@@ -72,16 +76,66 @@ void FileObject::readFile(QString path) {
             vertexTemp.append(vector);
 
         } else if (line.startsWith('f')) {
-            for (int i = 1; i < list.size(); i++) {
-                int vert = list.at(i).section('/', 0, 0).toInt();
-                int normal = list.at(i).section('/', 2, 2).toInt();
 
 
-                this->_vertexes.append(vertexTemp.at(vert-1));
-                if (normal != 0) {
-                    this->_vertexNorms.insert(this->_vertexes.size(), normTemp.at(normal-1));
+            QVector4D* vec;
+            QVector3D* norm;
+            int i;
+
+
+            // check normals
+
+            bool noNormals = true;
+            for (i = 1; i < list.size(); i++) {
+                if (list.at(i).section('/', 2, 2).toInt() != 0) {
+                    noNormals = false;
                 }
             }
+
+            if (noNormals) {
+
+                int verts[] = {
+                    list.at(1).section('/', 0, 0).toInt()-1,
+                    list.at(2).section('/', 0, 0).toInt()-1,
+                    list.at(3).section('/', 0, 0).toInt()-1
+                };
+                QVector3D normal = QVector3D::normal(
+                    vertexTemp.at(verts[0])->toVector3D(),
+                    vertexTemp.at(verts[1])->toVector3D(),
+                    vertexTemp.at(verts[2])->toVector3D()
+                );
+
+                for (i = 1; i < list.size(); i++) {
+                    vec = vertexTemp.at(list.at(i).section('/', 0, 0).toInt() - 1);
+                    this->_faces.append(vec->x());
+                    this->_faces.append(vec->y());
+                    this->_faces.append(vec->z());
+                    this->_faces.append(vec->w());
+
+                    this->_faces.append(normal.x());
+                    this->_faces.append(normal.y());
+                    this->_faces.append(normal.z());
+
+                    this->_faces.append(materialId); // Material id
+                }
+            } else {
+                for (i = 1; i < list.size(); i++) {
+                    vec = vertexTemp.at(list.at(i).section('/', 0, 0).toInt() - 1);
+                    norm = normTemp.at(list.at(i).section('/', 2, 2).toInt() - 1);
+
+                    this->_faces.append(vec->x());
+                    this->_faces.append(vec->y());
+                    this->_faces.append(vec->z());
+                    this->_faces.append(vec->w());
+
+                    this->_faces.append(norm->x());
+                    this->_faces.append(norm->y());
+                    this->_faces.append(norm->z());
+
+                    this->_faces.append(materialId); // Material id
+                }
+            }
+
         } else if (line.startsWith("usemtl")) {
             material = list.at(1);
         }
@@ -100,121 +154,119 @@ void FileObject::readFile(QString path) {
 
         QTextStream mtlStream(&myFile);
 
-        Material* mat = new Material();
-        int i;
-        bool firstMaterial = true;
-        bool currentSet = true;
+        Material* mat;
         do {
             line = mtlStream.readLine();
             QStringList list = line.split(' ');
 
             if (line.startsWith("newmtl")) {
+                mat = new Material();
+                qDebug() << list.at(1);
+                this->_materials.append(mat);
 
-                currentSet = true;
-                if (firstMaterial) {
-                    firstMaterial = false;
-                } else {
-                    if (material == mat->name) {
-                        this->_materials.append(mat);
-                    }
-                    mat = new Material();
-                }
-
-                mat->name = list.at(1);
             } else if (line.startsWith("Ka")) {
-                for (i = 1; i < list.size(); i++) {
-                    mat->ambient[i-1] = list.at(i).toFloat();
-                }
-                currentSet = false;
+
+                mat->setAmbient(QVector4D(
+                    list.at(1).toFloat(),
+                    list.at(2).toFloat(),
+                    list.at(3).toFloat(),
+                    1.0f
+                ));
+
             } else if (line.startsWith("Kd")) {
-                for (i = 1; i < list.size(); i++) {
-                    mat->diffuse[i-1] = list.at(i).toFloat();
-                }
-                currentSet = false;
+                mat->setDiffuse(QVector4D(
+                    list.at(1).toFloat(),
+                    list.at(2).toFloat(),
+                    list.at(3).toFloat(),
+                    1.0f
+                ));
             } else if (line.startsWith("Ks")) {
-                for (i = 1; i < list.size(); i++) {
-                    mat->specular[i-1] = list.at(i).toFloat();
-                }
-                currentSet = false;
-            } else if (line.startsWith("Ks")) {
-                for (i = 1; i < list.size(); i++) {
-                    mat->specular[i-1] = list.at(i).toFloat();
-                }
-                currentSet = false;
+                mat->setSpecular(QVector4D(
+                    list.at(1).toFloat(),
+                    list.at(2).toFloat(),
+                    list.at(3).toFloat(),
+                    1.0f
+                ));
             } else if (line.startsWith("Ns")) {
-                mat->specular[3] = list.at(1).toFloat();
-                currentSet = false;
+                mat->setShihiness(list.at(1).toFloat());
             }
 
 
         } while (!line.isNull());
-
-        if (!currentSet) {
-            if (material == mat->name) {
-                this->_materials.append(mat);
-            }
-        }
     }
 
-    this->_vertexBuffer = new QGLBuffer(QGLBuffer::VertexBuffer);
+
 
 }
 
-void FileObject::_initialize()
+void FileObject::fillBuffer(QGLBuffer *b, QList<QVector4D*> data)
 {
-    if (this->_vertexes.size() > 0) {
-        if (!this->_vertexBuffer->isCreated()) {
+    int size = data.size();
 
-            int size = this->_vertexes.size();
-
-            this->_vertexBuffer->create();
-
-            this->_vertexBuffer->bind();
-            this->_vertexBuffer->setUsagePattern(QGLBuffer::StaticDraw);
-            this->_vertexBuffer->allocate(2 * 3 * size * sizeof(GLfloat));
-
-            GLfloat* qs = (GLfloat*)this->_vertexBuffer->map(QGLBuffer::ReadWrite);
-
-            QVector3D normal = QVector3D::normal(
-                *this->_vertexes.at(0),
-                *this->_vertexes.at(1),
-                *this->_vertexes.at(2)
-            );
-
-            QVector3D* n;
-
-            for (int i = 0; i < size; i++) {
-                if ((i+1)%3 == 0) {
-                    normal = QVector3D::normal(
-                        *this->_vertexes.at(i-2),
-                        *this->_vertexes.at(i-1),
-                        *this->_vertexes.at(i)
-                    );
-                }
-                qs[i*6+0] = this->_vertexes.at(i)->x();
-                qs[i*6+1] = this->_vertexes.at(i)->y();
-                qs[i*6+2] = this->_vertexes.at(i)->z();
-
-                n = this->_vertexNorms.value(i);
+    int allocBits = 4 * size * sizeof(GLfloat);
+    GLfloat* qs = (GLfloat*) malloc(allocBits);
 
 
-                if (n->isNull()) {
-                    qs[i*6+3] = normal.x();
-                    qs[i*6+4] = normal.y();
-                    qs[i*6+5] = normal.z();
-                } else {
-                    qs[i*6+3] = n->x();
-                    qs[i*6+4] = n->y();
-                    qs[i*6+5] = n->z();
-                }
-            }
-
-            this->_vertexBuffer->unmap();
-        }
+    for (int i = 0; i < size; i++) {
+        qs[i*4+0] = data.at(i)->x();
+        qs[i*4+1] = data.at(i)->y();
+        qs[i*4+2] = data.at(i)->z();
+        qs[i*4+3] = data.at(i)->w();
     }
 
-    this->_vertexes.clear();
-    this->_vertexNorms.clear();
+
+    b->create();
+    b->bind();
+    b->allocate(qs, allocBits);
+    b->setUsagePattern(QGLBuffer::StaticDraw);
+    b->release();
+
+    free(qs);
+
+    data.clear();
+}
+
+void FileObject::fillBuffer(QGLBuffer *b, QList<GLushort> data)
+{
+    int size = data.size();
+
+    int allocBits = size * sizeof(GLushort);
+
+    GLushort* qs = (GLushort*) malloc(allocBits);
+
+    for (int i = 0; i < size; i++) {
+        qs[i] = data.at(i);
+    }
+
+    b->create();
+    b->bind();
+    b->allocate(qs, allocBits);
+    b->setUsagePattern(QGLBuffer::StaticDraw);
+    b->release();
+
+    free(qs);
+
+    data.clear();
+}
+
+
+void FileObject::_initialize()
+{
+    if (this->_faces.size() > 0) {
+
+        int size = this->_faces.size();
+
+        int allocBits = size * sizeof(GLfloat);
+
+        this->_vertexBuffer->create();
+        this->_vertexBuffer->bind();
+        this->_vertexBuffer->allocate(this->_faces.data(), allocBits);
+        this->_vertexBuffer->setUsagePattern(QGLBuffer::StaticDraw);
+        this->_vertexBuffer->release();
+
+        this->_faces.clear();
+
+    }
 
     this->_initialized = true;
 }

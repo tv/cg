@@ -1,9 +1,9 @@
-attribute vec3 v_coord;
+attribute vec4 v_coord;
 attribute vec3 v_normal;
 
-varying vec4 position;  // position of the vertex (and fragment) in world space
-varying vec3 vnormalDirection;  // surface normal vector in world space
-varying vec3 normal;
+varying vec4 vv_position;  // position of the vertex (and fragment) in world space
+varying vec3 vv_normalDirection;  // surface normal vector in world space
+varying vec3 vv_normal;
 
 uniform mat4 m, v, p;
 uniform mat3 m_3x3_inv_transp;
@@ -23,14 +23,15 @@ void main()
                      0.0, 0.0, 0.5, 0.0,
                      0.5, 0.5, 0.5, 1.0);
 
+
     mat4 mvp = p*v*m;
 
-    position = m * vec4(v_coord, 1.0);
+    vv_position = m * v_coord;
 
-    normal = v_normal;
-    vnormalDirection = normalize(m_3x3_inv_transp * v_normal);
+    vv_normal = v_normal;
+    vv_normalDirection = normalize(m_3x3_inv_transp * v_normal);
 
-    ShadowCoord = bias * in_light0_p * in_light0_v * position;
+    ShadowCoord = bias * in_light0_p * in_light0_v * m * v_coord;
 
-    gl_Position = mvp * vec4(v_coord, 1.0);
+    gl_Position = mvp * v_coord;
 }

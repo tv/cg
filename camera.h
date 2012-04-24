@@ -9,7 +9,7 @@ class Camera : public QObject
 public:
     explicit Camera(QObject *parent = 0);
     
-    QVector3D position;
+    QVector4D position;
     QVector3D direction;
     QVector3D up;
     QMatrix4x4 projection;
@@ -30,6 +30,7 @@ public:
     void rotateDown();
 
 
+    void calculateDirection();
     float beta;
     float theta;
 
@@ -44,7 +45,7 @@ signals:
 public slots:
 
 protected:
-    void calculateDirection();
+
 };
 
 #endif // CAMERA_H

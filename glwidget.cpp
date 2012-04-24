@@ -30,11 +30,9 @@ void GLWidget::initializeGL()
 //    glShadeModel(GL_SMOOTH);
     glClearColor (0.0, 0.0, 0.0, 0.0);
   //  glClearDepth(1.0f);
+
     glEnable(GL_DEPTH_TEST);
 
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_LIGHTING);
-    glEnable(GL_TEXTURE_2D);
 
     this->_program = new QGLShaderProgram();
     //this->_program->addShaderFromSourceFile(QGLShader::Geometry, "./shader.g.glsl");
@@ -88,6 +86,9 @@ void GLWidget::initializeFBO()
     const GLubyte *errString;
     GLenum FBOstatus;
 
+    glGenFramebuffers(1, &this->fboId);
+    glBindFramebuffer(GL_FRAMEBUFFER, this->fboId);
+
     // Depth texture
     glGenTextures(1, &this->depthTextureId);
     glBindTexture(GL_TEXTURE_2D, this->depthTextureId);
@@ -95,14 +96,16 @@ void GLWidget::initializeFBO()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
         mapWidth, mapHeight, 0,
         GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depthTextureId, 0);
 
     // Color texture
     glGenTextures(1, &this->colorTextureId);
@@ -112,7 +115,7 @@ void GLWidget::initializeFBO()
         errString = gluErrorString(errCode);
         qDebug() << "initialize before parametri color OpenGL Error: " << QString((char*)errString);
     }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -133,10 +136,9 @@ void GLWidget::initializeFBO()
 
 
     // Fbo for those
-    glGenFramebuffers(1, &this->fboId);
-    glBindFramebuffer(GL_FRAMEBUFFER, this->fboId);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depthTextureId, 0);
+
+
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, this->colorTextureId, 0);
 
     FBOstatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -180,55 +182,55 @@ void GLWidget::initializeFBO()
 
     GLfloat cube_vertices[] = {
         // front
-        -this->_screenWidth/2, -this->_screenHeight/2, 0, 0.0, 0.0,
-         this->_screenWidth/2, -this->_screenHeight/2, 0, 1.0, 0.0,
-        -this->_screenWidth/2,  this->_screenHeight/2, 0, 1.0, 1.0,
-         this->_screenWidth/2,  this->_screenHeight/2, 0, 0.0, 1.0
+        -this->_screenWidth/2, -this->_screenHeight/2, 0.0f, 0.0f, 0.0f, 0.0f,
+         this->_screenWidth/2, -this->_screenHeight/2, 0.0f, 0.0f, 1.0f, 0.0f,
+        -this->_screenWidth/2,  this->_screenHeight/2, 0.0f, 0.0f, 1.0f, 1.0f,
+         this->_screenWidth/2,  this->_screenHeight/2, 0.0f, 0.0f, 0.0f, 1.0f
       };
 
     this->blurVBO = new QGLBuffer(QGLBuffer::VertexBuffer);
     this->blurVBO->create();
     this->blurVBO->bind();
-    this->blurVBO->allocate(cube_vertices, 4 * 5 * sizeof(GLfloat));
+    this->blurVBO->allocate(cube_vertices, 4 * 6 * sizeof(GLfloat));
+    this->blurVBO->setUsagePattern(QGLBuffer::StreamDraw);
     this->blurVBO->release();
-
 }
 
-void GLWidget::blurShadowMap(void)
+void GLWidget::blurShadowMap(QGLShaderProgram *p)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, this->blurFboId);
     glViewport(0,0, this->_screenWidth  * this->shadowMapCoef * this->blurCoef,
                     this->_screenHeight * this->shadowMapCoef * this->blurCoef);
 
-    this->_blurProgram->bind();
-
-    this->_blurProgram->setUniformValue("scale_uniform", 1.0/(_screenWidth * shadowMapCoef * blurCoef), 0.0);
-    this->_blurProgram->setUniformValue("texture_source", 0);
-
-
-
+    p->bind();
 
     this->blurVBO->bind();
 
-    this->_blurProgram->enableAttributeArray("v_coord");
-    this->_blurProgram->enableAttributeArray("v_tex");
-    this->_blurProgram->setAttributeBuffer(
+    p->setUniformValue("scale_uniform", 1.0/(_screenWidth * shadowMapCoef * blurCoef), 0.0);
+    p->setUniformValue("texture_source", 0);
+
+
+
+
+    p->enableAttributeArray("v_coord");
+    p->enableAttributeArray("v_tex");
+    p->setAttributeBuffer(
         "v_coord",
         GL_FLOAT,
         0 * sizeof(GLfloat),
-        2,
-        5*sizeof(GLfloat)
+        4,
+        6*sizeof(GLfloat)
     );
 
-    this->_blurProgram->setAttributeBuffer(
+    p->setAttributeBuffer(
         "v_tex",
         GL_FLOAT,
-        3 * sizeof(GLfloat),
+        4 * sizeof(GLfloat),
         2,
-        5*sizeof(GLfloat)
+        6*sizeof(GLfloat)
     );
 
-    glDrawArrays(GL_QUADS, 0, 20);
+    //glDrawArrays(GL_QUADS, 0, 20);
 
 
 
@@ -239,9 +241,9 @@ void GLWidget::blurShadowMap(void)
     model.translate(0,0,-5);
     view.setToIdentity();
 
-    this->_blurProgram->setUniformValue("m", model);
-    this->_blurProgram->setUniformValue("v", view);
-    this->_blurProgram->setUniformValue("p", proj);
+    p->setUniformValue("m", model);
+    p->setUniformValue("v", view);
+    p->setUniformValue("p", proj);
 
     glDrawArrays(GL_QUADS, 0, this->blurVBO->size() / sizeof(GLfloat));
 
@@ -249,43 +251,22 @@ void GLWidget::blurShadowMap(void)
 
     glViewport(0,0, this->_screenWidth * this->shadowMapCoef,
                this->_screenHeight * this->shadowMapCoef);
-    this->_blurProgram->setUniformValue("scale_uniform", 1.0/(_screenHeight * shadowMapCoef), 0.0);
+
+    p->setUniformValue("scale_uniform", 1.0/(_screenHeight * shadowMapCoef), 0.0);
+
     glBindTexture(GL_TEXTURE_2D, this->blurFboIdColorTextureId);
 
     glDrawArrays(GL_QUADS, 0, this->blurVBO->size() / sizeof(GLfloat));
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    this->_blurProgram->disableAttributeArray("v_coord");
-    this->_blurProgram->disableAttributeArray("v_tex");
-    this->_blurProgram->release();
+    p->disableAttributeArray("v_coord");
+    p->disableAttributeArray("v_tex");
+    p->release();
     this->blurVBO->release();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-
-
-void GLWidget::generateShadowMap()
-{
-
-}
-
-void GLWidget::drawObjects(QGLShaderProgram * p, Camera *cam)
-{
-    cam->injectToShader(p);
-
-    p->setUniformValue("debug_mode", this->debugMode);
-
-    for (int i = 0; i < this->_lights.size(); i++) {
-        this->_lights.at(i)->injectToShader(p, i);
-    }
-
-    for (int i = 0; i < this->_objects.size(); i++) {
-        this->_objects.at(i)->injectToShader(p);
-    }
-
-}
-
 
 
 void GLWidget::paintGL()
@@ -301,38 +282,57 @@ void GLWidget::paintGL()
     QGLShaderProgram * p;
     Camera * cam;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, this->fboId);
+    // only one light atm
+    for (int i = 0; i < 1; i++) {
 
-    glViewport(0,0, this->_screenWidth*shadowMapCoef, this->_screenHeight*shadowMapCoef);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        if (this->debugMode != 4) {
+            glBindFramebuffer(GL_FRAMEBUFFER, this->fboId);
+        }
 
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    p = this->_shadowProgram;
-    cam = this->_lights.at(0)->camera;
+        glCullFace(GL_BACK);
 
-    p->bind();
+        if (this->debugMode == 4) {
 
-    cam->injectToShader(p);
-
-    p->setUniformValue("debug_mode", this->debugMode);
-/*
-    for (int i = 0; i < this->_lights.size(); i++) {
-        this->_lights.at(i)->injectToShader(p, i);
-    }*/
-
-    for (int i = 0; i < this->_objects.size(); i++) {
-        this->_objects.at(i)->injectToShader(p);
-    }
+            p = this->_program;
 
 
-    glGenerateMipmap(GL_TEXTURE_2D);
+        } else {
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0,0, this->_screenWidth*shadowMapCoef, this->_screenHeight*shadowMapCoef);
+            p = this->_shadowProgram;
 
-    p->release();
+        }
 
-    if (this->blurEnabled) {
-        this->blurShadowMap();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        cam = this->_lights.at(i)->camera;
+
+        p->bind();
+
+        // wont be used in shadow program
+        p->setUniformValue("debug_mode", 4);
+
+        cam->injectToShader(p);
+
+        for (int i = 0; i < this->_objects.size(); i++) {
+            this->_objects.at(i)->injectToShader(p);
+        }
+
+        if (this->debugMode == 4) {
+            p->release();
+            return;
+        }
+
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        p->release();
+
+        if (this->blurEnabled) {
+            this->blurShadowMap(this->_shadowProgram);
+        }
     }
 
     if (this->showDebug) {
@@ -349,7 +349,7 @@ void GLWidget::paintGL()
         glLoadIdentity();
         glColor4f(1,1,1,1);
         glActiveTextureARB(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D,this->depthTextureId);
+        glBindTexture(GL_TEXTURE_2D,this->colorTextureId);
         glEnable(GL_TEXTURE_2D);
         glTranslated(0,0,-1);
         glBegin(GL_QUADS);
@@ -374,14 +374,9 @@ void GLWidget::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     p->bind();
 
-    if (this->shadowEnabled) {
-        p->setUniformValue("ShadowMap", 7);
-        glActiveTextureARB(GL_TEXTURE7);
-        glBindTexture(GL_TEXTURE_2D, this->colorTextureId);
-    }
-
-    glCullFace(GL_BACK);
-
+    p->setUniformValue("ShadowMap", 7);
+    glActiveTextureARB(GL_TEXTURE7);
+    glBindTexture(GL_TEXTURE_2D, this->colorTextureId);
 
     cam->injectToShader(p);
 
@@ -395,7 +390,6 @@ void GLWidget::paintGL()
         this->_objects.at(i)->injectToShader(p);
     }
 
-    glBindTexture(GL_TEXTURE_2D, 0);
     this->_program->release();
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
@@ -415,27 +409,30 @@ void GLWidget::initializeObjects()
 {
     Material* material = new Material();
 
-    FileObject* obj = new FileObject();
-    obj->readFile("rock.obj");
-    obj->setPosition(QVector3D(0, -2, -22));
-    obj->setMaterial(material);
-    this->_append(obj);
+
+    FileObject* cube = new FileObject();
+    cube->readFile("rock.obj");
+    cube->setPosition(QVector3D(0, -1, -15));
+    cube->setMaterial(material);
+    this->_append(cube);
+
 
     FileObject* room = new FileObject();
-    room->readFile("floor.obj");
     room->setMaterial(material);
-    room->setPosition(QVector3D(0, -5, -25));
+    room->readFile("room.obj");
+    room->setPosition(QVector3D(0, -10, -30));
     room->setScale(10.0f);
-    room->setMaterial(material);
     this->_append(room);
 
 
     Light* light = new Light();
 
-    Camera * cam = new Camera();
+    Camera* cam = new Camera();
+
+    cam->position = QVector4D(0.0f, 0.0f, 0.0f, 1.0f);
+
     light->setCamera(cam);
     this->_lights.append(light);
-
 
 
     QObject::connect(light, SIGNAL(redraw()), this, SLOT(updateGL()));
@@ -453,7 +450,7 @@ void GLWidget::resizeGL(int w, int h)
     this->camera->setPerspective(45.0f, aspect, 1.0f, 100.0f);
 
     for (int i = 0; i < this->_lights.size(); i++) {
-        this->_lights.at(i)->camera->setPerspective(45.0f, aspect, 1.0f, 100.0f);
+        this->_lights.at(i)->updateProjection(aspect);
     }
 }
 
@@ -477,9 +474,6 @@ void GLWidget::checkClick(QMouseEvent *event)
 
     QMatrix4x4 view = this->camera->getMatrix();
     QMatrix4x4 perspective = this->camera->projection;
-
-    GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
 
     GLfloat zNear = 0.0f,
             zFar  = 1.0f;
@@ -540,6 +534,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         int dy = event->y() - lastPos.y();
 
 
+
         if (dx > 0) {
             this->_lights.at(0)->camera->rotateRight();
         } else if (dx < 0) {
@@ -596,28 +591,32 @@ void GLWidget::wheelEvent(QWheelEvent *event)
 
 void GLWidget::keyPressEvent(QKeyEvent *event)
 {
+    Camera* cam = this->camera;
+    if (this->debugMode == 4) {
+        cam = this->_lights.at(0)->camera;
+    }
     switch(event->key()) {
         case Qt::Key_Escape:
             QApplication::exit();
             QApplication::quit();
             break;
         case Qt::Key_Up:
-            this->camera->moveForward();
+            cam->moveForward();
             break;
         case Qt::Key_Down:
-            this->camera->moveBack();
+            cam->moveBack();
             break;
         case Qt::Key_Left:
-            this->camera->strafeLeft();
+            cam->strafeLeft();
             break;
         case Qt::Key_Right:
-            this->camera->strafeRight();
+            cam->strafeRight();
             break;
         case Qt::Key_Z:
-            this->camera->moveDown();
+            cam->moveDown();
             break;
         case Qt::Key_A:
-            this->camera->moveUp();
+            cam->moveUp();
             break;
         case Qt::Key_Q:
             if (this->shadowEnabled) {
@@ -627,12 +626,23 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
             }
             break;
         case Qt::Key_W:
-            if (this->debugMode <= 2) {
+            if (this->debugMode <= 3) {
                 this->debugMode++;
             } else {
                 this->debugMode = 0;
             }
-            qDebug() << this->debugMode;
+            if (this->debugMode == 0) {
+                qDebug() << this->debugMode << "Debug: Disabled";
+            } else if ( this->debugMode == 1) {
+                qDebug() << this->debugMode << "Debug: Show light cobinations, red = diff+spec, green = attenuation, blue = shadow";
+            } else if ( this->debugMode == 2) {
+                qDebug() << this->debugMode << "Debug: force color to white";
+            } else if ( this->debugMode == 3) {
+                qDebug() << this->debugMode << "Debug: disable shadow";
+            } else if ( this->debugMode == 3) {
+                qDebug() << this->debugMode << "Debug: Lights pow";
+            }
+
         case Qt::Key_N:
             if (this->blurEnabled) {
                 this->blurEnabled = false;

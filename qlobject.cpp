@@ -50,8 +50,6 @@ void QLObject::injectToShader(QGLShaderProgram *p)
     p->setUniformValue("m", trans);
     p->setUniformValue("m_3x3_inv_transp", trans.normalMatrix());
 
-    this->_vertexBuffer->bind();
-
     if ((errCode = glGetError()) != GL_NO_ERROR) {
 
         errString = gluErrorString(errCode);
@@ -62,22 +60,34 @@ void QLObject::injectToShader(QGLShaderProgram *p)
 
     p->enableAttributeArray("v_coord");
     p->enableAttributeArray("v_normal");
+    p->enableAttributeArray("v_mat");
+
+    this->_vertexBuffer->bind();
 
     p->setAttributeBuffer(
         "v_coord",
         GL_FLOAT,
         0 * sizeof(GLfloat),
-        3,
-        6 * sizeof(GLfloat)
+        4,
+        8 * sizeof(GLfloat)
     );
 
     p->setAttributeBuffer(
         "v_normal",
         GL_FLOAT,
-        3 * sizeof(GLfloat),
+        4 * sizeof(GLfloat),
         3,
-        6 * sizeof(GLfloat)
+        8 * sizeof(GLfloat)
     );
+
+    p->setAttributeBuffer(
+        "v_mat",
+        GL_FLOAT,
+        7 * sizeof(GLfloat),
+        1,
+        8 * sizeof(GLfloat)
+    );
+
     glDrawArrays(GL_TRIANGLES, 0, this->_vertexBuffer->size() / (sizeof(GLfloat)));
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
@@ -86,6 +96,8 @@ void QLObject::injectToShader(QGLShaderProgram *p)
     }
     p->disableAttributeArray("v_coord");
     p->disableAttributeArray("v_normal");
+    p->disableAttributeArray("v_mat");
+
 
     this->_vertexBuffer->release();
 

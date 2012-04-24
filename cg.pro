@@ -13,7 +13,6 @@ SOURCES += main.cpp \
     mainwindow.cpp \
     fileobject.cpp \
     material.cpp \
-    material/materialtest.cpp \
     light.cpp \
     camera.cpp
 HEADERS += glwidget.h \
@@ -21,7 +20,6 @@ HEADERS += glwidget.h \
     mainwindow.h \
     fileobject.h \
     material.h \
-    material/materialtest.h \
     light.h \
     camera.h
 FORMS += mainwindow.ui

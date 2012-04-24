@@ -1,5 +1,5 @@
 uniform mat4 m, v, p;
-attribute vec3 v_coord;
+attribute vec4 v_coord;
 
 uniform mat4 v_inv;
 
@@ -10,6 +10,6 @@ void main(void)
 {
     mat4 mvp = p*v*m;
 
-    gl_Position = mvp * vec4(v_coord, 1.0);
+    gl_Position = mvp * v_coord;
     position = gl_Position;
 }

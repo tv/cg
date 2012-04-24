@@ -17,7 +17,6 @@
 #include "fileobject.h"
 #include "light.h"
 
-#include "material/materialtest.h"
 #include "camera.h"
 
 class GLWidget : public QGLWidget {
@@ -75,7 +74,7 @@ protected:
 
     GLuint blurFboId;
     GLuint blurFboIdColorTextureId;
-    void blurShadowMap(void);
+    void blurShadowMap(QGLShaderProgram * p);
 
     bool showDebug;
     bool blurEnabled;

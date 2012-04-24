@@ -3,7 +3,7 @@
 Camera::Camera(QObject *parent) :
     QObject(parent)
 {
-    this->position  = QVector3D(0.0, 0.0, 0.0);
+    this->position  = QVector4D(0.0, 0.0, 0.0, 1.0);
     this->direction = QVector3D(0.0, 0.0, -1.0),
     this->up        = QVector3D(0.0, 1.0, 0.0);
 
@@ -87,7 +87,6 @@ void Camera::injectToShader(QGLShaderProgram *p, QString prefix) {
     if (loc == -1) {
         qDebug() << name << "failed";
     }
-    char *ptr = name.toAscii().data();
     p->setUniformValue(loc, mat);
 
     // perspective
@@ -96,13 +95,11 @@ void Camera::injectToShader(QGLShaderProgram *p, QString prefix) {
     if (loc == -1) {
         qDebug() << name << "failed";
     }
-    ptr = name.toAscii().data();
     p->setUniformValue(loc, this->projection);
 
     // inverse view
     name = QString("%1_v_inv").arg(prefix);
     loc = p->uniformLocation(name);
-    ptr = name.toAscii().data();
     p->setUniformValue(loc, mat.inverted());
 
 
@@ -136,8 +133,8 @@ QMatrix4x4 Camera::getMatrix() {
     QMatrix4x4 mat = QMatrix4x4();
 
     mat.lookAt(
-        this->position,
-        this->position+this->direction,
+        this->position.toVector3D(),
+        this->position.toVector3D()+this->direction,
         this->up
     );
 
