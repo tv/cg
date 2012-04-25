@@ -70,11 +70,15 @@ void Camera::calculateDirection() {
 
     QQuaternion b = QQuaternion::fromAxisAndAngle(QVector3D(0,1,0),this->beta),
                 t = QQuaternion::fromAxisAndAngle(QVector3D(1,0,0),this->theta),
-                d = b+t;
+                d = b*t;
 
     d.normalize();
 
+
+
     this->direction = d.rotatedVector(QVector3D(0,0,-1));
+
+    qDebug() << this->direction << this->beta << this->theta;
 }
 
 void Camera::injectToShader(QGLShaderProgram *p, QString prefix) {

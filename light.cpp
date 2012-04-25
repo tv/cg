@@ -7,16 +7,34 @@ Light::Light(QObject *parent) :
     this->specular = QVector4D(1.0, 1.0, 1.0, 1.0);
 
     this->attenuations = QVector3D(1.0, 0.01, 0.0);
-    this->spotCutOff = 180.0;
+    this->spotCutOff = 45.0f;
     this->spotExponent = 1.0;
 
-    this->angle = 0.0f;
+    this->initializedFBO = false;
+    this->initializingFBO = false;
 }
 
 void Light::injectToShader(QGLShaderProgram *p, int key) {
     Camera* cam = this->camera;
 
-    GLfloat mat[20] = {
+    QString name = QString("in_light%1_shadow").arg(key);
+    char *ptr = name.toAscii().data();
+
+    glActiveTexture(GL_TEXTURE0+key);
+    glBindTexture(GL_TEXTURE_2D, this->depthTextureId);
+
+    p->setUniformValue(ptr, key);
+
+    GLenum errCode;
+    const GLubyte *errString;
+    GLenum FBOstatus;
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        errString = gluErrorString(errCode);
+        qDebug() << "Light::inject after texture OpenGL Error: " << QString((char*)errString);
+    }
+
+
+    GLfloat mat[21] = {
         cam->position.x(), cam->position.y(), cam->position.z(), cam->position.w(),
         this->diffuse.x(), this->diffuse.y(), this->diffuse.z(), this->diffuse.w(),
         this->specular.x(), this->specular.y(), this->specular.z(), this->specular.w(),
@@ -25,12 +43,11 @@ void Light::injectToShader(QGLShaderProgram *p, int key) {
         this->spotCutOff,
         this->spotExponent,
 
-        cam->direction.x(), cam->direction.y(), cam->direction.z()
+        cam->direction.x(), cam->direction.y(), cam->direction.z(),
     };
 
-    QString name = QString("in_light%1").arg(key);
-
-    const char *ptr = name.toAscii().data();
+    name = QString("in_light%1").arg(key);
+    ptr = name.toAscii().data();
     p->setUniformValueArray(ptr, mat, 21, 1);
 
     this->camera->injectToShader(p, name);
@@ -43,8 +60,123 @@ void Light::setCamera(Camera* cam)
 
 void Light::updateProjection(double aspect)
 {
-    this->camera->setPerspective(45.0f, aspect, 0.1, 100.0);
-    //this->camera->setPerspective(this->spotCutOff/2, aspect, 0.1, 100.0);
+    //this->camera->setPerspective(45.0f, aspect, 0.1, 100.0);
+    this->camera->setPerspective(this->spotCutOff, aspect, 0.1, 100.0);
+}
+
+void Light::initializeShadowFBO(QSize screen)
+{
+    if (this->initializingFBO) return;
+
+    this->initializingFBO = true;
+    int mapWidth = screen.width()  * 0.5,
+        mapHeight = screen.height() * 0.5;
+
+
+    GLenum errCode;
+    const GLubyte *errString;
+    GLenum FBOstatus;
+
+    glGenFramebuffers(1, &this->fboId);
+    glBindFramebuffer(GL_FRAMEBUFFER, this->fboId);
+
+    // Depth texture
+    glGenTextures(1, &this->depthTextureId);
+    glBindTexture(GL_TEXTURE_2D, this->depthTextureId);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+
+    glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+        mapWidth, mapHeight, 0,
+        GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
+
+
+
+    qDebug() << mapWidth << mapHeight;
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depthTextureId, 0);
+
+    // Fbo for those
+    FBOstatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    switch (FBOstatus) {
+        case GL_FRAMEBUFFER_COMPLETE_EXT:
+            qDebug() << "shadow success!";
+            break;
+        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
+            qDebug() << " Attachment Point Unconnected";
+            break;
+        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
+            qDebug() << " Error: Missing Attachment";
+            break;
+        case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
+            qDebug() << " Error: Dimensions do not match";
+            break;
+        case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
+            qDebug() << " Error: Formats";
+            break;
+        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
+            qDebug() << " Error: Draw Buffer";
+            break;
+        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
+            qDebug() << " Error: Read Buffer";
+            break;
+        case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
+            qDebug() << " Error: Unsupported Framebuffer Configuration";
+            break;
+        default:
+            qDebug() << " Error: Unkown Framebuffer Object Failure";
+            break;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        errString = gluErrorString(errCode);
+        qDebug() << "initialize after unbind OpenGL Error: " << QString((char*)errString);
+    }
+
+
+
+    this->initializedFBO = true;
+}
+
+void Light::bindFBO() {
+    glBindFramebuffer(GL_FRAMEBUFFER, this->fboId);
+    GLenum errCode;
+    const GLubyte *errString;
+    GLenum FBOstatus;
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        errString = gluErrorString(errCode);
+        qDebug() << "initialize after unbind OpenGL Error: " << QString((char*)errString);
+    }
+}
+
+void Light::releaseFBO() {
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    GLenum errCode;
+    const GLubyte *errString;
+    GLenum FBOstatus;
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        errString = gluErrorString(errCode);
+        qDebug() << "initialize after unbind OpenGL Error: " << QString((char*)errString);
+    }
+}
+
+void Light::bindDebugShadowMap()
+{
+    glActiveTextureARB(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,this->depthTextureId);
 }
 
 void Light::animate()

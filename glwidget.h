@@ -59,28 +59,12 @@ protected:
 
     int debugMode;
 
-    // Shadow buffers
+    // Shadows
 
-    QGLBuffer* blurVBO;
     QGLShaderProgram* _shadowProgram;
-    QGLShaderProgram* _blurProgram;
-    bool initializedFBO;
-    float shadowMapCoef;
-    float blurCoef;
-
-    GLuint fboId;
-    GLuint depthTextureId;
-    GLuint colorTextureId;
-
-    GLuint blurFboId;
-    GLuint blurFboIdColorTextureId;
-    void blurShadowMap(QGLShaderProgram * p);
 
     bool showDebug;
-    bool blurEnabled;
     bool shadowEnabled;
-
-    void generateShadowMap();
 
 public slots:
     void animate();

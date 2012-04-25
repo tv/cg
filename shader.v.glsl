@@ -24,14 +24,17 @@ void main()
                      0.5, 0.5, 0.5, 1.0);
 
 
-    mat4 mvp = p*v*m;
+    mat4 mvp = p * v * m;
 
     vv_position = m * v_coord;
 
     vv_normal = v_normal;
     vv_normalDirection = normalize(m_3x3_inv_transp * v_normal);
 
-    ShadowCoord = bias * in_light0_p * in_light0_v * m * v_coord;
+
+    mat4 l_mvp = in_light0_p * in_light0_v * m;
+    ShadowCoord = bias * l_mvp  * v_coord;
+    ShadowCoord = ShadowCoord / ShadowCoord.w;
 
     gl_Position = mvp * v_coord;
 }

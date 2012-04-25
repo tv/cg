@@ -5,15 +5,9 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent)
     setMouseTracking(true);
     this->selectedIndex = 0;
 
-    this->shadowMapCoef = 0.5;
-    this->blurCoef      = 0.25;
-
-    this->initializedFBO = false;
-
     this->showDebug = false;
 
     this->debugMode = 0;
-    this->blurEnabled = true;
     this->shadowEnabled = true;
 }
 
@@ -43,17 +37,11 @@ void GLWidget::initializeGL()
     this->_shadowProgram->addShaderFromSourceFile(QGLShader::Vertex, "./shadow.v.glsl");
     this->_shadowProgram->addShaderFromSourceFile(QGLShader::Fragment, "./shadow.f.glsl");
 
-    this->_blurProgram = new QGLShaderProgram();
-    this->_blurProgram->addShaderFromSourceFile(QGLShader::Vertex, "./blur.v.glsl");
-    this->_blurProgram->addShaderFromSourceFile(QGLShader::Fragment, "./blur.f.glsl");
-
     this->_program->link();
     this->_shadowProgram->link();
-    this->_blurProgram->link();
 
     qDebug() << this->_program->log();
     qDebug() << this->_shadowProgram->log();
-    qDebug() << this->_blurProgram->log();
 
     this->camera = new Camera();
     this->initializeObjects();
@@ -73,7 +61,7 @@ void GLWidget::initializeGL()
     this->_timer->start(10);
 
 }
-
+/*
 void GLWidget::initializeFBO()
 {
 
@@ -99,6 +87,10 @@ void GLWidget::initializeFBO()
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    glTexParameteri( GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
         mapWidth, mapHeight, 0,
         GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
@@ -107,40 +99,7 @@ void GLWidget::initializeFBO()
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depthTextureId, 0);
 
-    // Color texture
-    glGenTextures(1, &this->colorTextureId);
-    glBindTexture(GL_TEXTURE_2D, this->colorTextureId);
-
-    if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize before parametri color OpenGL Error: " << QString((char*)errString);
-    }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-    if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize after color parametri OpenGL Error: " << QString((char*)errString);
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F_ARB, mapWidth, mapHeight, 0, GL_RGB, GL_FLOAT, 0);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D,0);
-
-    if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize after color OpenGL Error: " << QString((char*)errString);
-    }
-
-
     // Fbo for those
-
-
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, this->colorTextureId, 0);
-
     FBOstatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if(FBOstatus != GL_FRAMEBUFFER_COMPLETE_EXT) {
         qDebug() << "shadow map ERRORS!!";
@@ -156,117 +115,8 @@ void GLWidget::initializeFBO()
     }
 
     this->initializedFBO = true;
-
-
-    // blur fbo
-    glGenFramebuffers(1, &this->blurFboId);
-    glBindFramebuffer(GL_FRAMEBUFFER, this->blurFboId);
-
-    glGenTextures(1, &this->blurFboIdColorTextureId);
-    glBindTexture(GL_TEXTURE_2D, this->blurFboIdColorTextureId);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F_ARB, mapWidth*this->blurCoef, mapHeight*this->blurCoef, 0, GL_RGB, GL_FLOAT, 0);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->blurFboIdColorTextureId, 0);
-
-    FBOstatus = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER);
-    if(FBOstatus != GL_FRAMEBUFFER_COMPLETE_EXT) {
-        qDebug() << "blur ERRORS!!";
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    GLfloat cube_vertices[] = {
-        // front
-        -this->_screenWidth/2, -this->_screenHeight/2, 0.0f, 0.0f, 0.0f, 0.0f,
-         this->_screenWidth/2, -this->_screenHeight/2, 0.0f, 0.0f, 1.0f, 0.0f,
-        -this->_screenWidth/2,  this->_screenHeight/2, 0.0f, 0.0f, 1.0f, 1.0f,
-         this->_screenWidth/2,  this->_screenHeight/2, 0.0f, 0.0f, 0.0f, 1.0f
-      };
-
-    this->blurVBO = new QGLBuffer(QGLBuffer::VertexBuffer);
-    this->blurVBO->create();
-    this->blurVBO->bind();
-    this->blurVBO->allocate(cube_vertices, 4 * 6 * sizeof(GLfloat));
-    this->blurVBO->setUsagePattern(QGLBuffer::StreamDraw);
-    this->blurVBO->release();
 }
-
-void GLWidget::blurShadowMap(QGLShaderProgram *p)
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, this->blurFboId);
-    glViewport(0,0, this->_screenWidth  * this->shadowMapCoef * this->blurCoef,
-                    this->_screenHeight * this->shadowMapCoef * this->blurCoef);
-
-    p->bind();
-
-    this->blurVBO->bind();
-
-    p->setUniformValue("scale_uniform", 1.0/(_screenWidth * shadowMapCoef * blurCoef), 0.0);
-    p->setUniformValue("texture_source", 0);
-
-
-
-
-    p->enableAttributeArray("v_coord");
-    p->enableAttributeArray("v_tex");
-    p->setAttributeBuffer(
-        "v_coord",
-        GL_FLOAT,
-        0 * sizeof(GLfloat),
-        4,
-        6*sizeof(GLfloat)
-    );
-
-    p->setAttributeBuffer(
-        "v_tex",
-        GL_FLOAT,
-        4 * sizeof(GLfloat),
-        2,
-        6*sizeof(GLfloat)
-    );
-
-    //glDrawArrays(GL_QUADS, 0, 20);
-
-
-
-    QMatrix4x4 proj = QMatrix4x4(),
-               view = QMatrix4x4(),
-              model = QMatrix4x4();
-    proj.ortho(-this->_screenWidth/2, this->_screenWidth/2, -this->_screenHeight/2, this->_screenHeight/2, 1, 20);
-    model.translate(0,0,-5);
-    view.setToIdentity();
-
-    p->setUniformValue("m", model);
-    p->setUniformValue("v", view);
-    p->setUniformValue("p", proj);
-
-    glDrawArrays(GL_QUADS, 0, this->blurVBO->size() / sizeof(GLfloat));
-
-    glBindFramebuffer(GL_FRAMEBUFFER, this->fboId);
-
-    glViewport(0,0, this->_screenWidth * this->shadowMapCoef,
-               this->_screenHeight * this->shadowMapCoef);
-
-    p->setUniformValue("scale_uniform", 1.0/(_screenHeight * shadowMapCoef), 0.0);
-
-    glBindTexture(GL_TEXTURE_2D, this->blurFboIdColorTextureId);
-
-    glDrawArrays(GL_QUADS, 0, this->blurVBO->size() / sizeof(GLfloat));
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    p->disableAttributeArray("v_coord");
-    p->disableAttributeArray("v_tex");
-    p->release();
-    this->blurVBO->release();
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
+*/
 
 
 void GLWidget::paintGL()
@@ -274,33 +124,40 @@ void GLWidget::paintGL()
     GLenum errCode;
     const GLubyte *errString;
 
-    if (!this->initializedFBO) {
-        this->initializeFBO();
-    }
     // First pass for shadowmapping
 
     QGLShaderProgram * p;
     Camera * cam;
+    Light * light;
 
     // only one light atm
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < this->_lights.size(); i++) {
+        light = this->_lights.at(i);
+        if (!light->initializedFBO) {
+            light->initializeShadowFBO(QSize(this->_screenWidth, this->_screenHeight));
+            return;
+        }
+
+        QApplication::exit();
+        QApplication::quit();
 
         if (this->debugMode != 4) {
-            glBindFramebuffer(GL_FRAMEBUFFER, this->fboId);
+            light->bindFBO();
         }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glCullFace(GL_BACK);
+        glCullFace(GL_FRONT);
 
         if (this->debugMode == 4) {
 
             p = this->_program;
+            p = this->_shadowProgram;
 
 
         } else {
 
-            glViewport(0,0, this->_screenWidth*shadowMapCoef, this->_screenHeight*shadowMapCoef);
+            glViewport(0,0, this->_screenWidth*0.5, this->_screenHeight*0.5);
             p = this->_shadowProgram;
 
         }
@@ -324,15 +181,9 @@ void GLWidget::paintGL()
             return;
         }
 
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        light->releaseFBO();
 
         p->release();
-
-        if (this->blurEnabled) {
-            this->blurShadowMap(this->_shadowProgram);
-        }
     }
 
     if (this->showDebug) {
@@ -348,8 +199,9 @@ void GLWidget::paintGL()
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         glColor4f(1,1,1,1);
-        glActiveTextureARB(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D,this->colorTextureId);
+
+        this->_lights.at(0)->bindDebugShadowMap();
+
         glEnable(GL_TEXTURE_2D);
         glTranslated(0,0,-1);
         glBegin(GL_QUADS);
@@ -373,10 +225,6 @@ void GLWidget::paintGL()
     glViewport(0,0, this->_screenWidth, this->_screenHeight);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     p->bind();
-
-    p->setUniformValue("ShadowMap", 7);
-    glActiveTextureARB(GL_TEXTURE7);
-    glBindTexture(GL_TEXTURE_2D, this->colorTextureId);
 
     cam->injectToShader(p);
 
@@ -412,24 +260,35 @@ void GLWidget::initializeObjects()
 
     FileObject* cube = new FileObject();
     cube->readFile("rock.obj");
-    cube->setPosition(QVector3D(0, -1, -15));
+    cube->setPosition(QVector3D(0, 3, -22));
     cube->setMaterial(material);
     this->_append(cube);
 
 
     FileObject* room = new FileObject();
     room->setMaterial(material);
-    room->readFile("room.obj");
-    room->setPosition(QVector3D(0, -10, -30));
-    room->setScale(10.0f);
+    room->readFile("floor.obj");
+    room->setPosition(QVector3D(0, -5, -22));
     this->_append(room);
+
+    FileObject* floor = new FileObject();
+    floor->setMaterial(material);
+    floor->readFile("floor.obj");
+    floor->setPosition(QVector3D(0, 0, -27));
+    floor->setRotateX(90.0f);
+    this->_append(floor);
 
 
     Light* light = new Light();
 
     Camera* cam = new Camera();
 
-    cam->position = QVector4D(0.0f, 0.0f, 0.0f, 1.0f);
+    cam->position = QVector4D(0.0f, 15.0f, -10.0f, 1.0f);
+
+    cam->theta = -30.0f;
+    cam->beta = 0.0f;
+
+    cam->calculateDirection();
 
     light->setCamera(cam);
     this->_lights.append(light);
@@ -639,16 +498,12 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
                 qDebug() << this->debugMode << "Debug: force color to white";
             } else if ( this->debugMode == 3) {
                 qDebug() << this->debugMode << "Debug: disable shadow";
-            } else if ( this->debugMode == 3) {
+            } else if ( this->debugMode == 4) {
                 qDebug() << this->debugMode << "Debug: Lights pow";
             }
 
         case Qt::Key_N:
-            if (this->blurEnabled) {
-                this->blurEnabled = false;
-            } else {
-                this->blurEnabled = true;
-            }
+
             break;
         case Qt::Key_D:
             if (this->showDebug) {

@@ -1,12 +1,11 @@
 #version 330
+#pragma debug(on)
 
 varying vec4 vv_position;  // position of the vertex (and fragment) in world space
 varying vec3 vv_normalDirection;  // surface normal vector in world space
 varying vec3 vv_normal;
 
 varying vec4 ShadowCoord;
-
-uniform sampler2D ShadowMap;
 
 uniform mat4 m, v, p;
 uniform mat4 v_inv;
@@ -15,6 +14,7 @@ uniform bool noFragment;
 
 
 uniform float[23] in_light0;
+uniform sampler2DShadow in_light0_shadow;
 uniform float[17] in_material;
 
 uniform int debug_mode;
@@ -27,7 +27,7 @@ struct Light
   float constantAttenuation, linearAttenuation, quadraticAttenuation;
   float spotCutoff, spotExponent;
   vec3 direction;
-
+  sampler2DShadow shadowMap;
 };
 
 struct Material
@@ -45,20 +45,25 @@ Light lights[numberOfLights];
 vec4 scene_ambient = vec4(0.02, 0.02, 0.02, 1.0);
 
 
-float chebyshevUpperBound(sampler2D map, vec4 SC)
+float shadows(Light light, vec4 SC, vec4 lightDirection)
 {
+    float depth = shadow2DProj(light.shadowMap, SC).r;
 
-    vec4 SCpP = SC / SC.w;
+    if (depth != 1.0) {
+        return 0.45;
+    }
+    return 1.0;
 
-    float distance = ShadowCoord.z;
-    vec2 moments = texture2D(map, SCpP.xy).rg;
-    return moments.x;
+    float distance = lightDirection.w / 50;
+    vec2 moments =  shadow2DProj(light.shadowMap, SC).r;
     if (distance <= moments.x) {
         return 1.0;
     }
 
+    return 0.0;
+
     float variance = moments.y - (moments.x * moments.x);
-    variance = max(variance, 0.00002);
+    variance = max(variance, 0.002);
 
     float d = distance - moments.x;
 
@@ -118,14 +123,16 @@ float attenuation(Light light, vec4 lightDirection)
     return attenuation;
 }
 
-vec3 diffuseReflection(Light light, Material mat, float attenuation, vec3 normalDirection, vec3 lightDirection)
+vec3 diffuseReflection(Light light, Material mat, float attenuation,
+                       vec3 normalDirection, vec3 lightDirection)
 {
     return attenuation
         * vec3(light.diffuse) * vec3(mat.diffuse)
         * max(0.0, dot(normalDirection, lightDirection));
 }
 
-vec3 specularReflection(Light light, Material mat, float attenuation, vec3 normalDirection, vec3 lightDirection, vec3 viewDirection)
+vec3 specularReflection(Light light, Material mat, float attenuation,
+                        vec3 normalDirection, vec3 lightDirection, vec3 viewDirection)
 {
     vec3 specularReflection;
     if (dot(normalDirection, lightDirection) < 0.0) { // light source on the wrong side?
@@ -140,12 +147,6 @@ vec3 specularReflection(Light light, Material mat, float attenuation, vec3 norma
 
 void main(void)
 {
-
-    if (debug_mode == 4) {
-        gl_FragColor = vv_position.z/-40 * vec4(1.0, 1.0, 1.0, 1.0);
-        return;
-    }
-
     if (debug_mode == 2) {
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         return;
@@ -162,10 +163,16 @@ void main(void)
         vec4(in_light0[0], in_light0[1], in_light0[2], in_light0[3]),
         vec4(in_light0[4], in_light0[5], in_light0[6], in_light0[7]),
         vec4(in_light0[8], in_light0[9], in_light0[10], in_light0[11]),
+
         in_light0[12], in_light0[13], in_light0[14],
         in_light0[15], in_light0[16],
-        vec3(in_light0[17], in_light0[18], in_light0[19])
+
+        vec3(-in_light0[17], -in_light0[18], -in_light0[19]),
+
+        in_light0_shadow
     );
+
+    //lights[0].spotCutoff = 10.0f;
 
     vec3 normalDirection = normalize(vv_normalDirection);
     vec3 viewDirection = normalize(vec3(v_inv * vec4(0.0, 0.0, 0.0, 1.0) - vv_position));
@@ -174,9 +181,11 @@ void main(void)
 
     for (int i = 0; i < numberOfLights; i++) {
 
-        float shadow = chebyshevUpperBound(ShadowMap, ShadowCoord);
-
         vec4 lightDirection = lightDirection(lights[i]);
+
+        float shadow = shadows(lights[i], ShadowCoord, lightDirection);
+
+
 
         float attenuation = attenuation(lights[i], lightDirection);
 

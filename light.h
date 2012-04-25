@@ -1,6 +1,12 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
+#define GL_GLEXT_PROTOTYPES true
+
+#include "GL/gl.h"
+#include "GL/glu.h"
+#include "GL/glext.h"
+
 #include <QObject>
 #include <QVector3D>
 #include <QVector4D>
@@ -28,8 +34,17 @@ public:
 
     void updateProjection(double aspect);
 
+    bool initializedFBO;
+    bool initializingFBO;
+    void initializeShadowFBO(QSize screen);
+    void bindDebugShadowMap();
+    void bindFBO();
+    void releaseFBO();
+
+
 protected:
-    qreal angle;
+    GLuint fboId;
+    GLuint depthTextureId;
 signals:
 
     void redraw();
