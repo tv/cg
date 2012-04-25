@@ -77,8 +77,6 @@ void Camera::calculateDirection() {
 
 
     this->direction = d.rotatedVector(QVector3D(0,0,-1));
-
-    qDebug() << this->direction << this->beta << this->theta;
 }
 
 void Camera::injectToShader(QGLShaderProgram *p, QString prefix) {

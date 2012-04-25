@@ -198,24 +198,30 @@ void GLWidget::_append(QLObject* obj)
 void GLWidget::initializeObjects()
 {
     Material* material = new Material();
+    material->setSpecular(QVector4D(1.0, 1.0, 1.0, 1.0));
+    material->setShihiness(70.0f);
+    Material* material2 = new Material();
+    material2->setDiffuse(QVector4D(0.3, 0.3, 1.0, 1.0));
+    Material* material3 = new Material();
+    material3->setAmbient(QVector4D(0.4, 1.0, 0.3, 1.0));
 
 
     FileObject* cube = new FileObject();
     cube->setMaterial(material);
-    cube->readFile("rock.obj");
+    cube->readFile("monkey.obj");
     cube->setPosition(QVector3D(3, 0, -22));
     this->_append(cube);
 
 
     FileObject* cube2= new FileObject();
-    cube2->setMaterial(material);
+    cube2->setMaterial(material2);
     cube2->readFile("cube.obj");
     cube2->setPosition(QVector3D(-4, 0, -22));
     this->_append(cube2);
 
 
     FileObject* room = new FileObject();
-    room->setMaterial(material);
+    room->setMaterial(material3);
     room->readFile("floor.obj");
     room->setPosition(QVector3D(0, -5, -22));
     this->_append(room);
@@ -279,9 +285,9 @@ void GLWidget::animate()
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton or event->button() == Qt::RightButton){
-        this->checkClick(event);
-    }
+    //if (event->button() == Qt::LeftButton or event->button() == Qt::RightButton){
+    //    this->checkClick(event);
+    //}
 }
 
 void GLWidget::checkClick(QMouseEvent *event)
