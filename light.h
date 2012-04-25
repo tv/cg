@@ -45,6 +45,7 @@ public:
 protected:
     GLuint fboId;
     GLuint depthTextureId;
+    GLuint colorTextureId;
 signals:
 
     void redraw();
