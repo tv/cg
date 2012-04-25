@@ -1,4 +1,4 @@
-#version 330
+#version 120
 #pragma debug(on)
 
 varying vec4 vv_position;  // position of the vertex (and fragment) in world space

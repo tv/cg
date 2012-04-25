@@ -3,10 +3,6 @@
 
 #define GL_GLEXT_PROTOTYPES true
 
-#include "GL/gl.h"
-#include "GL/glu.h"
-#include "GL/glext.h"
-
 #include <iostream>
 #include <QtOpenGL>
 #include <QGLShaderProgram>

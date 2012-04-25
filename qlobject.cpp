@@ -32,16 +32,16 @@ void QLObject::injectToShader(QGLShaderProgram *p)
     }
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "QLobject  before inject materials OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "QLobject  before inject materials OpenGL Error: " << errCode;
     }
 
     if (p->uniformLocation("in_material") != -1) {
         this->_materials.at(0)->injectToShader(p);
 
         if ((errCode = glGetError()) != GL_NO_ERROR) {
-            errString = gluErrorString(errCode);
-            qDebug() << "QLobject before bind  OpenGL Error: " << QString((char*)errString);
+
+            qDebug() << "QLobject before bind  OpenGL Error: " << errCode;
 
         }
     }
@@ -52,8 +52,8 @@ void QLObject::injectToShader(QGLShaderProgram *p)
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
 
-        errString = gluErrorString(errCode);
-        qDebug() << "QLobject  after bind  OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "QLobject  after bind  OpenGL Error: " << errCode;
         return;
 
     }
@@ -91,8 +91,8 @@ void QLObject::injectToShader(QGLShaderProgram *p)
     glDrawArrays(GL_TRIANGLES, 0, this->_vertexBuffer->size() / (sizeof(GLfloat)));
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "QLobject  after draw OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "QLobject  after draw OpenGL Error: " << errCode;
     }
     p->disableAttributeArray("v_coord");
     p->disableAttributeArray("v_normal");

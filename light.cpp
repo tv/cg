@@ -29,8 +29,8 @@ void Light::injectToShader(QGLShaderProgram *p, int key) {
     const GLubyte *errString;
     GLenum FBOstatus;
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "Light::inject after texture OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "Light::inject after texture OpenGL Error: " << errCode;
     }
 
 
@@ -74,7 +74,6 @@ void Light::initializeShadowFBO(QSize screen)
 
 
     GLenum errCode;
-    const GLubyte *errString;
     GLenum FBOstatus;
 
     glGenFramebuffers(1, &this->fboId);
@@ -106,8 +105,8 @@ void Light::initializeShadowFBO(QSize screen)
     glBindTexture(GL_TEXTURE_2D, this->colorTextureId);
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize before parametri color OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "initialize before parametri color OpenGL Error: " << errCode;
     }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -115,8 +114,8 @@ void Light::initializeShadowFBO(QSize screen)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize after color parametri OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "initialize after color parametri OpenGL Error: " << errCode;
     }
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F_ARB, mapWidth, mapHeight, 0, GL_RGB, GL_FLOAT, 0);
@@ -124,8 +123,8 @@ void Light::initializeShadowFBO(QSize screen)
     glBindTexture(GL_TEXTURE_2D,0);
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize after color OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "initialize after color OpenGL Error: " << errCode;
     }
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, this->colorTextureId, 0);
@@ -166,8 +165,8 @@ void Light::initializeShadowFBO(QSize screen)
 
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize after unbind OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "initialize after unbind OpenGL Error: " << errCode;
     }
 
 
@@ -183,8 +182,8 @@ void Light::bindFBO() {
     const GLubyte *errString;
     GLenum FBOstatus;
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize after unbind OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "initialize after unbind OpenGL Error: " << errCode;
     }
 }
 
@@ -195,8 +194,8 @@ void Light::releaseFBO() {
     const GLubyte *errString;
     GLenum FBOstatus;
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize after unbind OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "initialize after unbind OpenGL Error: " << errCode;
     }
 }
 

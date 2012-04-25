@@ -1,4 +1,4 @@
-#version 330
+#version 120
 
 
 attribute vec4 v_coord;

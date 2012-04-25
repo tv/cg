@@ -48,8 +48,8 @@ void GLWidget::initializeGL()
     GLenum errCode;
     const GLubyte *errString;
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initializeGL END OpenGL Error: " << QString((char*)errString);
+
+        qDebug() << "initializeGL END OpenGL Error: " << errCode;
     }
 
 
@@ -183,8 +183,8 @@ void GLWidget::paintGL()
     this->_program->release();
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "GLWidget  after  2nd pas: " << QString((char*)errString);
+
+        qDebug() << "GLWidget  after  2nd pas: " << errCode;
     }
 }
 

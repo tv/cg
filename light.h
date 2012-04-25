@@ -3,10 +3,6 @@
 
 #define GL_GLEXT_PROTOTYPES true
 
-#include "GL/gl.h"
-#include "GL/glu.h"
-#include "GL/glext.h"
-
 #include <QObject>
 #include <QVector3D>
 #include <QVector4D>
