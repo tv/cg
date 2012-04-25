@@ -1,3 +1,6 @@
+#version 330
+
+
 attribute vec4 v_coord;
 attribute vec3 v_normal;
 
@@ -13,7 +16,11 @@ uniform mat4 in_light0_v; // cameras view
 uniform mat4 in_light0_v_inv; // cameras view
 uniform mat4 in_light0_p; // cameras view
 
-varying vec4 ShadowCoord;
+uniform mat4 in_light1_v; // cameras view
+uniform mat4 in_light1_v_inv; // cameras view
+uniform mat4 in_light1_p; // cameras view
+
+varying vec4[2] ShadowCoord;
 
 void main()
 {
@@ -32,9 +39,11 @@ void main()
     vv_normalDirection = normalize(m_3x3_inv_transp * v_normal);
 
 
-    mat4 l_mvp = in_light0_p * in_light0_v * m;
-    ShadowCoord = bias * l_mvp  * v_coord;
-    ShadowCoord = ShadowCoord / ShadowCoord.w;
+    ShadowCoord[0] = bias * in_light0_p * in_light0_v * m * v_coord;
+    ShadowCoord[0] = ShadowCoord[0] / ShadowCoord[0].w;
+
+    ShadowCoord[1] = bias * in_light1_p * in_light1_v * m * v_coord;
+    ShadowCoord[1] = ShadowCoord[1] / ShadowCoord[1].w;
 
     gl_Position = mvp * v_coord;
 }

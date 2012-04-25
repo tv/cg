@@ -5,16 +5,20 @@ varying vec4 vv_position;  // position of the vertex (and fragment) in world spa
 varying vec3 vv_normalDirection;  // surface normal vector in world space
 varying vec3 vv_normal;
 
-varying vec4 ShadowCoord;
-
 uniform mat4 m, v, p;
 uniform mat4 v_inv;
 
 uniform bool noFragment;
 
 
-uniform float[23] in_light0;
+const int numberOfLights = 2;
+varying vec4[2] ShadowCoord;
 uniform sampler2DShadow in_light0_shadow;
+uniform float[23] in_light0;
+uniform sampler2DShadow in_light1_shadow;
+uniform float[23] in_light1;
+
+
 uniform float[17] in_material;
 
 uniform int debug_mode;
@@ -39,20 +43,36 @@ struct Material
   float shininess;
 };
 
-const int numberOfLights = 1;
 Light lights[numberOfLights];
 
 vec4 scene_ambient = vec4(0.02, 0.02, 0.02, 1.0);
 
+float lookup(sampler2DShadow shadowMap, vec4 SC, float x, float y)
+{
+    vec4 shadowcoord = vec4(SC.xy + vec2(x,y), SC.z ,SC.w);
+    float depth = shadow2DProj(shadowMap, shadowcoord).x;
+
+    return depth;
+    if (depth != 1.0) {
+        return 0.2;
+    }
+    return 1.0;
+}
 
 float shadows(Light light, vec4 SC, vec4 lightDirection)
 {
-    float depth = shadow2DProj(light.shadowMap, SC).r;
+    float sum = 0.0;
 
-    if (depth != 1.0) {
-        return 0.45;
+    float x,y;
+
+    for (y = -1.5; y <= 1.5; y += 1.0) {
+      for (x = -1.5; x <= 1.5; x += 1.0) {
+        sum += lookup(light.shadowMap, SC, x, y);
+      }
     }
-    return 1.0;
+
+    return sum/ 16.0;
+
 
     float distance = lightDirection.w / 50;
     vec2 moments =  shadow2DProj(light.shadowMap, SC).r;
@@ -172,6 +192,19 @@ void main(void)
         in_light0_shadow
     );
 
+    lights[1] = Light(
+        vec4(in_light1[0], in_light1[1], in_light1[2], in_light1[3]),
+        vec4(in_light1[4], in_light1[5], in_light1[6], in_light1[7]),
+        vec4(in_light1[8], in_light1[9], in_light1[10], in_light1[11]),
+
+        in_light1[12], in_light1[13], in_light1[14],
+        in_light1[15], in_light1[16],
+
+        vec3(-in_light1[17], -in_light1[18], -in_light1[19]),
+
+        in_light1_shadow
+    );
+
     //lights[0].spotCutoff = 10.0f;
 
     vec3 normalDirection = normalize(vv_normalDirection);
@@ -183,7 +216,7 @@ void main(void)
 
         vec4 lightDirection = lightDirection(lights[i]);
 
-        float shadow = shadows(lights[i], ShadowCoord, lightDirection);
+        float shadow = shadows(lights[i], ShadowCoord[i], lightDirection);
 
 
 

@@ -172,12 +172,12 @@ QMatrix4x4 QLObject::getTransformationMatrix()
  * return the depth of hit
  * return -100.0f if not hit
  */
-qreal QLObject::isHit(QVector3D position, qreal loopMax)
+qreal QLObject::isHit(QVector3D vector, qreal loopMax)
 {
     QMatrix4x4 m = this->getTransformationMatrix();
 
-    QVector3D mapped1 = m.map(this->_boundingBoxMax),
-              mapped2 = m.map(this->_boundingBoxMin),
+    QVector3D mapped1 = m * this->_boundingBoxMax,
+              mapped2 = m * this->_boundingBoxMin,
               point;
 
 
@@ -209,11 +209,11 @@ qreal QLObject::isHit(QVector3D position, qreal loopMax)
           i;
 
     for (i = 1.0f; i < iter; i++) {
-        point = position * i;
+        point = vector * i;
 
-        if (point.x() > min.x() && point.y() > min.y() && point.z() > min.z()
-            && point.x() < max.x() && point.y() < max.y() && point.z() < max.z()) {
-
+        if (min.x() < point.x() && min.y() < point.y() && min.z() < point.z() &&
+            point.x() < max.x() && point.y() < max.y() && point.z() < max.z()
+        ) {
             break;
         }
     }

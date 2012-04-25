@@ -7,7 +7,7 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent)
 
     this->showDebug = false;
 
-    this->debugMode = 0;
+    this->debugMode = 3;
     this->shadowEnabled = true;
 }
 
@@ -29,7 +29,6 @@ void GLWidget::initializeGL()
 
 
     this->_program = new QGLShaderProgram();
-    //this->_program->addShaderFromSourceFile(QGLShader::Geometry, "./shader.g.glsl");
     this->_program->addShaderFromSourceFile(QGLShader::Vertex, "./shader.v.glsl");
     this->_program->addShaderFromSourceFile(QGLShader::Fragment, "./shader.f.glsl");
 
@@ -61,63 +60,6 @@ void GLWidget::initializeGL()
     this->_timer->start(10);
 
 }
-/*
-void GLWidget::initializeFBO()
-{
-
-
-    int mapWidth = this->_screenWidth  * this->shadowMapCoef,
-        mapHeight = this->_screenHeight * this->shadowMapCoef;
-
-
-    GLenum errCode;
-    const GLubyte *errString;
-    GLenum FBOstatus;
-
-    glGenFramebuffers(1, &this->fboId);
-    glBindFramebuffer(GL_FRAMEBUFFER, this->fboId);
-
-    // Depth texture
-    glGenTextures(1, &this->depthTextureId);
-    glBindTexture(GL_TEXTURE_2D, this->depthTextureId);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glTexParameteri( GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-        mapWidth, mapHeight, 0,
-        GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
-
-
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depthTextureId, 0);
-
-    // Fbo for those
-    FBOstatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if(FBOstatus != GL_FRAMEBUFFER_COMPLETE_EXT) {
-        qDebug() << "shadow map ERRORS!!";
-    } else {
-        qDebug() << "shadow success!";
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    if ((errCode = glGetError()) != GL_NO_ERROR) {
-        errString = gluErrorString(errCode);
-        qDebug() << "initialize after unbind OpenGL Error: " << QString((char*)errString);
-    }
-
-    this->initializedFBO = true;
-}
-*/
-
 
 void GLWidget::paintGL()
 {
@@ -130,6 +72,8 @@ void GLWidget::paintGL()
     Camera * cam;
     Light * light;
 
+    if (this->debugMode != 3) {
+
     // only one light atm
     for (int i = 0; i < this->_lights.size(); i++) {
         light = this->_lights.at(i);
@@ -137,9 +81,6 @@ void GLWidget::paintGL()
             light->initializeShadowFBO(QSize(this->_screenWidth, this->_screenHeight));
             return;
         }
-
-        QApplication::exit();
-        QApplication::quit();
 
         if (this->debugMode != 4) {
             light->bindFBO();
@@ -184,6 +125,7 @@ void GLWidget::paintGL()
         light->releaseFBO();
 
         p->release();
+    }
     }
 
     if (this->showDebug) {
@@ -259,10 +201,17 @@ void GLWidget::initializeObjects()
 
 
     FileObject* cube = new FileObject();
-    cube->readFile("rock.obj");
-    cube->setPosition(QVector3D(0, 3, -22));
     cube->setMaterial(material);
+    cube->readFile("rock.obj");
+    cube->setPosition(QVector3D(3, 0, -22));
     this->_append(cube);
+
+
+    FileObject* cube2= new FileObject();
+    cube2->setMaterial(material);
+    cube2->readFile("cube.obj");
+    cube2->setPosition(QVector3D(-4, 0, -22));
+    this->_append(cube2);
 
 
     FileObject* room = new FileObject();
@@ -280,18 +229,24 @@ void GLWidget::initializeObjects()
 
 
     Light* light = new Light();
-
     Camera* cam = new Camera();
-
-    cam->position = QVector4D(0.0f, 15.0f, -10.0f, 1.0f);
-
+    cam->position = QVector4D(0.0f, 15.0f, -5.0f, 1.0f);
     cam->theta = -30.0f;
     cam->beta = 0.0f;
-
     cam->calculateDirection();
-
     light->setCamera(cam);
     this->_lights.append(light);
+
+
+    Light* light2 = new Light();
+    light2->diffuse = QVector4D(1.0, 0.0, 0.0, 1.0);
+    Camera* cam2 = new Camera();
+    cam2->position = QVector4D(0.0f, 15.0f, -18.0f, 1.0f);
+    cam2->theta = -80.0f;
+    cam2->beta = 0.0f;
+    cam2->calculateDirection();
+    light2->setCamera(cam2);
+    this->_lights.append(light2);
 
 
     QObject::connect(light, SIGNAL(redraw()), this, SLOT(updateGL()));
@@ -310,6 +265,7 @@ void GLWidget::resizeGL(int w, int h)
 
     for (int i = 0; i < this->_lights.size(); i++) {
         this->_lights.at(i)->updateProjection(aspect);
+        this->_lights.at(i)->initializedFBO = false;
     }
 }
 
@@ -323,9 +279,9 @@ void GLWidget::animate()
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
-    //if (event->button() == Qt::LeftButton or event->button() == Qt::RightButton){
-    //    this->checkClick(event);
-    //}
+    if (event->button() == Qt::LeftButton or event->button() == Qt::RightButton){
+        this->checkClick(event);
+    }
 }
 
 void GLWidget::checkClick(QMouseEvent *event)
@@ -335,7 +291,7 @@ void GLWidget::checkClick(QMouseEvent *event)
     QMatrix4x4 perspective = this->camera->projection;
 
     GLfloat zNear = 0.0f,
-            zFar  = 1.0f;
+            zFar  = 50.0f;
 
     qreal w = this->_screenWidth,
           h = this->_screenHeight,
@@ -350,11 +306,11 @@ void GLWidget::checkClick(QMouseEvent *event)
     QMatrix4x4 invPV = (view*perspective).inverted();
     QVector4D  out = QVector4D(X, Y, zNear, 1.0);
 
-    nearPoint = invPV.map(out);
+    nearPoint = invPV * out;
 
     out = QVector4D(X, Y, zFar, 1.0);
 
-    farPoint = invPV.map(out);
+    farPoint = invPV * out;
 
     rayVector = farPoint.toVector3D() - nearPoint.toVector3D();
 

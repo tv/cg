@@ -172,7 +172,9 @@ void Light::initializeShadowFBO(QSize screen)
 
 
 
+
     this->initializedFBO = true;
+    this->initializingFBO = false;
 }
 
 void Light::bindFBO() {

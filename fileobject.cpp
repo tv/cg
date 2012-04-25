@@ -10,6 +10,22 @@ FileObject::FileObject(QObject *parent) :
     this->_vertexBuffer = new QGLBuffer(QGLBuffer::VertexBuffer);
 }
 
+int FileObject::stringToInt(QString str, bool *ok)
+{
+    if (!ok) {
+        return 0;
+    }
+    return str.toInt(ok);
+}
+
+float FileObject::stringToFloat(QString str, bool *ok)
+{
+    if (!ok) {
+        return 0.0;
+    }
+    return str.toFloat(ok);
+}
+
 void FileObject::readFile(QString path) {
     QFile myFile(path);
 
@@ -30,15 +46,18 @@ void FileObject::readFile(QString path) {
 
     GLfloat materialId = 0;
 
+
+
     do {
+        bool ok = true;
         line = stream.readLine();
         QStringList list = line.split(' ');
 
         if (line.startsWith("vn")) {
             QVector3D* vector = new QVector3D(
-                list.at(1).toFloat(),
-                list.at(2).toFloat(),
-                list.at(3).toFloat()
+                stringToFloat(list.at(1), &ok),
+                stringToFloat(list.at(2), &ok),
+                stringToFloat(list.at(3), &ok)
             );
 
             normTemp.append(vector);
@@ -47,9 +66,9 @@ void FileObject::readFile(QString path) {
 
         } else if (line.startsWith('v')) {
             QVector4D* vector = new QVector4D(
-                list.at(1).toFloat(),
-                list.at(2).toFloat(),
-                list.at(3).toFloat(),
+                stringToFloat(list.at(1), &ok),
+                stringToFloat(list.at(2), &ok),
+                stringToFloat(list.at(3), &ok),
                 1.0f
             );
 
@@ -87,7 +106,7 @@ void FileObject::readFile(QString path) {
 
             bool noNormals = true;
             for (i = 1; i < list.size(); i++) {
-                if (list.at(i).section('/', 2, 2).toInt() != 0) {
+                if (stringToInt(list.at(i).section('/', 2, 2), &ok) != 0) {
                     noNormals = false;
                 }
             }
@@ -95,9 +114,9 @@ void FileObject::readFile(QString path) {
             if (noNormals) {
 
                 int verts[] = {
-                    list.at(1).section('/', 0, 0).toInt()-1,
-                    list.at(2).section('/', 0, 0).toInt()-1,
-                    list.at(3).section('/', 0, 0).toInt()-1
+                    stringToInt(list.at(1).section('/', 0, 0), &ok)-1,
+                    stringToInt(list.at(2).section('/', 0, 0), &ok)-1,
+                    stringToInt(list.at(3).section('/', 0, 0), &ok)-1,
                 };
                 QVector3D normal = QVector3D::normal(
                     vertexTemp.at(verts[0])->toVector3D(),
@@ -106,7 +125,7 @@ void FileObject::readFile(QString path) {
                 );
 
                 for (i = 1; i < list.size(); i++) {
-                    vec = vertexTemp.at(list.at(i).section('/', 0, 0).toInt() - 1);
+                    vec = vertexTemp.at(stringToInt(list.at(i).section('/', 0, 0), &ok)-1);
                     this->_faces.append(vec->x());
                     this->_faces.append(vec->y());
                     this->_faces.append(vec->z());
@@ -120,8 +139,8 @@ void FileObject::readFile(QString path) {
                 }
             } else {
                 for (i = 1; i < list.size(); i++) {
-                    vec = vertexTemp.at(list.at(i).section('/', 0, 0).toInt() - 1);
-                    norm = normTemp.at(list.at(i).section('/', 2, 2).toInt() - 1);
+                    vec = vertexTemp.at(stringToInt(list.at(i).section('/', 0, 0), &ok)-1);
+                    norm = normTemp.at(stringToInt(list.at(i).section('/', 2, 2), &ok)-1);
 
                     this->_faces.append(vec->x());
                     this->_faces.append(vec->y());
@@ -139,6 +158,10 @@ void FileObject::readFile(QString path) {
         } else if (line.startsWith("usemtl")) {
             material = list.at(1);
         }
+
+        if (!ok) {
+            qDebug() << "PARSER FAILED AT " << line;
+        }
     } while (!line.isNull());
 
     for (int i = 0; i < mtlTemp.size(); i++) {
@@ -155,7 +178,9 @@ void FileObject::readFile(QString path) {
         QTextStream mtlStream(&myFile);
 
         Material* mat;
+
         do {
+            bool ok = true;
             line = mtlStream.readLine();
             QStringList list = line.split(' ');
 
@@ -167,88 +192,37 @@ void FileObject::readFile(QString path) {
             } else if (line.startsWith("Ka")) {
 
                 mat->setAmbient(QVector4D(
-                    list.at(1).toFloat(),
-                    list.at(2).toFloat(),
-                    list.at(3).toFloat(),
+                    stringToFloat(list.at(1), &ok),
+                    stringToFloat(list.at(2), &ok),
+                    stringToFloat(list.at(3), &ok),
                     1.0f
                 ));
 
             } else if (line.startsWith("Kd")) {
                 mat->setDiffuse(QVector4D(
-                    list.at(1).toFloat(),
-                    list.at(2).toFloat(),
-                    list.at(3).toFloat(),
+                    stringToFloat(list.at(1), &ok),
+                    stringToFloat(list.at(2), &ok),
+                    stringToFloat(list.at(3), &ok),
                     1.0f
                 ));
             } else if (line.startsWith("Ks")) {
                 mat->setSpecular(QVector4D(
-                    list.at(1).toFloat(),
-                    list.at(2).toFloat(),
-                    list.at(3).toFloat(),
+                    stringToFloat(list.at(1), &ok),
+                    stringToFloat(list.at(2), &ok),
+                    stringToFloat(list.at(3), &ok),
                     1.0f
                 ));
             } else if (line.startsWith("Ns")) {
-                mat->setShihiness(list.at(1).toFloat());
+                mat->setShihiness(stringToFloat(list.at(1), &ok));
             }
 
 
+            if (!ok) {
+                qDebug() << "PARSER FAILED AT " << line;
+            }
         } while (!line.isNull());
     }
-
-
-
 }
-
-void FileObject::fillBuffer(QGLBuffer *b, QList<QVector4D*> data)
-{
-    int size = data.size();
-
-    int allocBits = 4 * size * sizeof(GLfloat);
-    GLfloat* qs = (GLfloat*) malloc(allocBits);
-
-
-    for (int i = 0; i < size; i++) {
-        qs[i*4+0] = data.at(i)->x();
-        qs[i*4+1] = data.at(i)->y();
-        qs[i*4+2] = data.at(i)->z();
-        qs[i*4+3] = data.at(i)->w();
-    }
-
-
-    b->create();
-    b->bind();
-    b->allocate(qs, allocBits);
-    b->setUsagePattern(QGLBuffer::StaticDraw);
-    b->release();
-
-    free(qs);
-
-    data.clear();
-}
-
-void FileObject::fillBuffer(QGLBuffer *b, QList<GLushort> data)
-{
-    int size = data.size();
-
-    int allocBits = size * sizeof(GLushort);
-
-    GLushort* qs = (GLushort*) malloc(allocBits);
-
-    for (int i = 0; i < size; i++) {
-        qs[i] = data.at(i);
-    }
-
-    b->create();
-    b->bind();
-    b->allocate(qs, allocBits);
-    b->setUsagePattern(QGLBuffer::StaticDraw);
-    b->release();
-
-    free(qs);
-
-    data.clear();
-}
-
 
 void FileObject::_initialize()
 {

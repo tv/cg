@@ -36,7 +36,7 @@ public:
     void setMaterial(Material* material);
     qreal getDepth();
 
-    qreal isHit(QVector3D position, qreal max);
+    qreal isHit(QVector3D vector, qreal max);
 
     void drawBoundingBox();
 

@@ -10,16 +10,14 @@ Q_OBJECT
 public:
     explicit FileObject(QObject *parent = 0);
 
-    void fillBuffer(QGLBuffer *b, QList<QVector4D*> data);
-    void fillBuffer(QGLBuffer *b, QList<GLushort> data);
-
-
     void readFile(QString path);
-
 protected:
     QVector<GLfloat> _faces;
 
     virtual void _initialize();
+
+    int stringToInt(QString str, bool *ok);
+    float stringToFloat(QString str, bool *ok);
 signals:
 
 public slots:
