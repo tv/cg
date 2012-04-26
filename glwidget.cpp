@@ -29,12 +29,12 @@ void GLWidget::initializeGL()
 
 
     this->_program = new QGLShaderProgram();
-    this->_program->addShaderFromSourceFile(QGLShader::Vertex, "./shader.v.glsl");
-    this->_program->addShaderFromSourceFile(QGLShader::Fragment, "./shader.f.glsl");
+    this->_program->addShaderFromSourceFile(QGLShader::Vertex, "./shaders/shader.v.glsl");
+    this->_program->addShaderFromSourceFile(QGLShader::Fragment, "./shaders/shader.f.glsl");
 
     this->_shadowProgram = new QGLShaderProgram();
-    this->_shadowProgram->addShaderFromSourceFile(QGLShader::Vertex, "./shadow.v.glsl");
-    this->_shadowProgram->addShaderFromSourceFile(QGLShader::Fragment, "./shadow.f.glsl");
+    this->_shadowProgram->addShaderFromSourceFile(QGLShader::Vertex, "./shaders/shadow.v.glsl");
+    this->_shadowProgram->addShaderFromSourceFile(QGLShader::Fragment, "./shaders/shadow.f.glsl");
 
     this->_program->link();
     this->_shadowProgram->link();
@@ -205,10 +205,9 @@ void GLWidget::initializeObjects()
     Material* material3 = new Material();
     material3->setAmbient(QVector4D(0.4, 1.0, 0.3, 1.0));
 
-
     FileObject* cube = new FileObject();
     cube->setMaterial(material);
-    cube->readFile("monkey.obj");
+    cube->readFile("cube.obj");
     cube->setPosition(QVector3D(3, 0, -22));
     this->_append(cube);
 

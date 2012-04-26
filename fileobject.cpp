@@ -27,7 +27,8 @@ float FileObject::stringToFloat(QString str, bool *ok)
 }
 
 void FileObject::readFile(QString path) {
-    QFile myFile(path);
+    QString dir = "objects/";
+    QFile myFile(dir+path);
 
     QString line;
 
@@ -166,7 +167,7 @@ void FileObject::readFile(QString path) {
 
     for (int i = 0; i < mtlTemp.size(); i++) {
 
-        QFile myFile(mtlTemp.at(i));
+        QFile myFile(dir+mtlTemp.at(i));
 
         QString line;
 

@@ -1,5 +1,6 @@
 *.o
 moc_*
-hw1
 Makefile
 hw1.pro.user
+cg
+cg.pro.user
