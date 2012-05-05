@@ -7,7 +7,7 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent)
 
     this->showDebug = false;
 
-    this->debugMode = 3;
+    this->debugMode = 2;
     this->shadowEnabled = true;
 }
 
@@ -197,6 +197,7 @@ void GLWidget::_append(QLObject* obj)
 
 void GLWidget::initializeObjects()
 {
+
     Material* material = new Material();
     material->setSpecular(QVector4D(1.0, 1.0, 1.0, 1.0));
     material->setShihiness(70.0f);
@@ -205,19 +206,17 @@ void GLWidget::initializeObjects()
     Material* material3 = new Material();
     material3->setAmbient(QVector4D(0.4, 1.0, 0.3, 1.0));
 
-    FileObject* cube = new FileObject();
-    cube->setMaterial(material);
-    cube->readFile("cube.obj");
-    cube->setPosition(QVector3D(3, 0, -22));
-    this->_append(cube);
+    GridNStuff* g = new GridNStuff();
+    g->lineDDA(QVector2D(75, 50), QVector2D(-75, -50));
+    g->lineDDA(QVector3D(50, 50, 50), QVector3D(-50, -50, -50));
+    g->circleMid(QVector2D(0,0), 50);
+
+    g->setPosition(QVector3D(0, 0, -15));
+    g->setMaterial(material2);
 
 
-    FileObject* cube2= new FileObject();
-    cube2->setMaterial(material2);
-    cube2->readFile("cube.obj");
-    cube2->setPosition(QVector3D(-4, 0, -22));
-    this->_append(cube2);
-
+    g->gridPlane();
+    this->_append(g);
 
     FileObject* room = new FileObject();
     room->setMaterial(material3);
@@ -225,12 +224,22 @@ void GLWidget::initializeObjects()
     room->setPosition(QVector3D(0, -5, -22));
     this->_append(room);
 
+/*
+    FileObject* cube2= new FileObject();
+    cube2->setMaterial(material2);
+    cube2->readFile("cube.obj");
+    cube2->setPosition(QVector3D(-4, 0, -22));
+    this->_append(cube2);
+
+
+
+
     FileObject* floor = new FileObject();
     floor->setMaterial(material);
     floor->readFile("floor.obj");
     floor->setPosition(QVector3D(0, 0, -27));
     floor->setRotateX(90.0f);
-    this->_append(floor);
+    this->_append(floor);*/
 
 
     Light* light = new Light();
@@ -242,7 +251,7 @@ void GLWidget::initializeObjects()
     light->setCamera(cam);
     this->_lights.append(light);
 
-
+/*
     Light* light2 = new Light();
     light2->diffuse = QVector4D(1.0, 0.0, 0.0, 1.0);
     Camera* cam2 = new Camera();
@@ -251,7 +260,7 @@ void GLWidget::initializeObjects()
     cam2->beta = 0.0f;
     cam2->calculateDirection();
     light2->setCamera(cam2);
-    this->_lights.append(light2);
+    this->_lights.append(light2);*/
 
 
     QObject::connect(light, SIGNAL(redraw()), this, SLOT(updateGL()));

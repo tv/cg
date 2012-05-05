@@ -14,6 +14,7 @@
 #include "light.h"
 
 #include "camera.h"
+#include "gridnstuff.h"
 
 class GLWidget : public QGLWidget {
     Q_OBJECT

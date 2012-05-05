@@ -4,10 +4,6 @@ FileObject::FileObject(QObject *parent) :
     QLObject(parent)
 {
     this->ignoreClickEvent = false;
-
-    this->_initialized = false;
-
-    this->_vertexBuffer = new QGLBuffer(QGLBuffer::VertexBuffer);
 }
 
 int FileObject::stringToInt(QString str, bool *ok)
@@ -223,25 +219,4 @@ void FileObject::readFile(QString path) {
             }
         } while (!line.isNull());
     }
-}
-
-void FileObject::_initialize()
-{
-    if (this->_faces.size() > 0) {
-
-        int size = this->_faces.size();
-
-        int allocBits = size * sizeof(GLfloat);
-
-        this->_vertexBuffer->create();
-        this->_vertexBuffer->bind();
-        this->_vertexBuffer->allocate(this->_faces.data(), allocBits);
-        this->_vertexBuffer->setUsagePattern(QGLBuffer::StaticDraw);
-        this->_vertexBuffer->release();
-
-        this->_faces.clear();
-
-    }
-
-    this->_initialized = true;
 }

@@ -16,10 +16,36 @@ QLObject::QLObject(QObject *parent) :
     this->_rotationY = 0;
     this->_rotationZ = 0;
     this->_scale = 1.0;
+
+    this->dataType = GL_TRIANGLES;
+    this->_vertexBuffer = new QGLBuffer(QGLBuffer::VertexBuffer);
+
+    this->_initialized = false;
+
+    this->_bufferEnabled = true;
 }
 
 void QLObject::_initialize()
 {
+    if (this->_bufferEnabled) { // is vertexbuffer enabled
+        if (this->_faces.size() > 0) {
+            int size = this->_faces.size();
+
+            int allocBits = size * sizeof(GLfloat);
+
+
+            this->_vertexBuffer->create();
+            this->_vertexBuffer->bind();
+            this->_vertexBuffer->allocate(this->_faces.data(), allocBits);
+            this->_vertexBuffer->setUsagePattern(QGLBuffer::StaticDraw);
+
+            qDebug() << size;
+
+            this->_faces.clear();
+        }
+    }
+
+    this->_initialized = true;
 }
 
 void QLObject::injectToShader(QGLShaderProgram *p)
@@ -62,44 +88,64 @@ void QLObject::injectToShader(QGLShaderProgram *p)
     p->enableAttributeArray("v_normal");
     p->enableAttributeArray("v_mat");
 
-    this->_vertexBuffer->bind();
+    if (this->_bufferEnabled) {
 
-    p->setAttributeBuffer(
-        "v_coord",
-        GL_FLOAT,
-        0 * sizeof(GLfloat),
-        4,
-        8 * sizeof(GLfloat)
-    );
 
-    p->setAttributeBuffer(
-        "v_normal",
-        GL_FLOAT,
-        4 * sizeof(GLfloat),
-        3,
-        8 * sizeof(GLfloat)
-    );
 
-    p->setAttributeBuffer(
-        "v_mat",
-        GL_FLOAT,
-        7 * sizeof(GLfloat),
-        1,
-        8 * sizeof(GLfloat)
-    );
+        this->_vertexBuffer->bind();
 
-    glDrawArrays(GL_TRIANGLES, 0, this->_vertexBuffer->size() / (sizeof(GLfloat)));
+        p->setAttributeBuffer(
+            "v_coord",
+            GL_FLOAT,
+            0 * sizeof(GLfloat),
+            4,
+            8 * sizeof(GLfloat)
+        );
+
+        p->setAttributeBuffer(
+            "v_normal",
+            GL_FLOAT,
+            4 * sizeof(GLfloat),
+            3,
+            8 * sizeof(GLfloat)
+        );
+
+        p->setAttributeBuffer(
+            "v_mat",
+            GL_FLOAT,
+            7 * sizeof(GLfloat),
+            1,
+            8 * sizeof(GLfloat)
+        );
+
+
+        glDrawArrays(this->dataType, 0, this->_vertexBuffer->size() / (sizeof(GLfloat)));
+
+
+
+    } else {
+        GLfloat* ptr = this->_faces.data();
+
+        p->setAttributeArray("v_coord", ptr, 4, 8);
+        p->setAttributeArray("v_coord", ptr+4*sizeof(GLfloat), 3, 8);
+        p->setAttributeArray("v_mat", ptr+7*sizeof(GLfloat), 1, 8);
+        glDrawArrays(this->dataType, this->_faces.size(), 1);
+    }
+
+    p->disableAttributeArray("v_coord");
+    p->disableAttributeArray("v_normal");
+    p->disableAttributeArray("v_mat");
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
 
         qDebug() << "QLobject  after draw OpenGL Error: " << errCode;
     }
-    p->disableAttributeArray("v_coord");
-    p->disableAttributeArray("v_normal");
-    p->disableAttributeArray("v_mat");
 
 
-    this->_vertexBuffer->release();
+
+    if (this->_bufferEnabled) {
+        this->_vertexBuffer->release();
+    }
 
 }
 

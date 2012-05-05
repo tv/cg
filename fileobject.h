@@ -12,10 +12,6 @@ public:
 
     void readFile(QString path);
 protected:
-    QVector<GLfloat> _faces;
-
-    virtual void _initialize();
-
     int stringToInt(QString str, bool *ok);
     float stringToFloat(QString str, bool *ok);
 signals:

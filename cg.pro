@@ -14,14 +14,16 @@ SOURCES += main.cpp \
     fileobject.cpp \
     material.cpp \
     light.cpp \
-    camera.cpp
+    camera.cpp \
+    gridnstuff.cpp
 HEADERS += glwidget.h \
     qlobject.h \
     mainwindow.h \
     fileobject.h \
     material.h \
     light.h \
-    camera.h
+    camera.h \
+    gridnstuff.h
 FORMS += mainwindow.ui
 OTHER_FILES += shader.vsf \
     shader.g.glsl \

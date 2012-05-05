@@ -46,6 +46,8 @@ protected:
 
     QMatrix4x4* _transformation;
 
+    GLenum dataType;
+
     // Old stuff here...
     qreal _scale;
     QVector3D _position;
@@ -62,6 +64,9 @@ protected:
     QVector3D _boundingBoxMax;
     QVector3D _boundingBoxMin;
 
+    QVector<GLfloat> _faces;
+
+    bool _bufferEnabled;
     QGLBuffer* _vertexBuffer;
 signals:
     void redraw();

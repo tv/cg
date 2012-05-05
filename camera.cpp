@@ -76,6 +76,8 @@ void Camera::calculateDirection() {
 
 
 
+    qDebug() << this->position << this->beta << this->theta;
+
     this->direction = d.rotatedVector(QVector3D(0,0,-1));
 }
 
