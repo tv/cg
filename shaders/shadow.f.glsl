@@ -1,4 +1,4 @@
-#version 120
+#version 150
 varying vec4 position;
 
 uniform int debug_mode;

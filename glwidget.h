@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <QtOpenGL>
+#include <QGLFormat>
 #include <QGLShaderProgram>
 #include <QtGui/QMouseEvent>
 #include <QTimer>
@@ -20,7 +21,7 @@ class GLWidget : public QGLWidget {
     Q_OBJECT
 
 public:
-    GLWidget(QWidget *parent = NULL);
+    GLWidget(QGLFormat format, QWidget *parent = NULL);
 protected:
     void initializeGL();
     void initializeObjects();

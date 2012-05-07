@@ -81,9 +81,12 @@ void Camera::calculateDirection() {
     this->direction = d.rotatedVector(QVector3D(0,0,-1));
 }
 
-void Camera::injectToShader(QGLShaderProgram *p, QString prefix) {
+void Camera::injectToShader(QGLShaderProgram *p, QString prefix)
+{
     QMatrix4x4 mat = this->getMatrix();
     int loc;
+
+    GLenum errCode;
 
     // view
     QString name = QString("%1_v").arg(prefix);
@@ -93,6 +96,10 @@ void Camera::injectToShader(QGLShaderProgram *p, QString prefix) {
     }
     p->setUniformValue(loc, mat);
 
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "Camera::injectPre after v: " << errCode;
+    }
+
     // perspective
     name = QString("%1_p").arg(prefix);
     loc = p->uniformLocation(name);
@@ -101,17 +108,28 @@ void Camera::injectToShader(QGLShaderProgram *p, QString prefix) {
     }
     p->setUniformValue(loc, this->projection);
 
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "Camera::injectPre after p: " << errCode;
+    }
+
     // inverse view
     name = QString("%1_v_inv").arg(prefix);
     loc = p->uniformLocation(name);
     p->setUniformValue(loc, mat.inverted());
 
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "Camera::injectPre after v_inv: " << errCode;
+    }
+
 
 }
-void Camera::injectToShader(QGLShaderProgram *p) {
+void Camera::injectToShader(QGLShaderProgram *p)
+{
 
     QMatrix4x4 mat = this->getMatrix();
     int loc;
+
+    GLenum errCode;
 
     // view
     loc = p->uniformLocation("v");
@@ -119,6 +137,11 @@ void Camera::injectToShader(QGLShaderProgram *p) {
         qDebug() << "v failed";
     }
     p->setUniformValue(loc, mat);
+    //p->setUniformValue("v", mat);
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "Camera::inject after v: " << errCode;
+    }
 
     // perspective
     loc = p->uniformLocation("p");
@@ -127,9 +150,17 @@ void Camera::injectToShader(QGLShaderProgram *p) {
     }
     p->setUniformValue(loc, this->projection);
 
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "Camera::inject after p: " << errCode;
+    }
+
     // inverse view
     loc = p->uniformLocation("v_inv");
     p->setUniformValue(loc, mat.inverted());
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "Camera::inject after v_inv: " << errCode;
+    }
 }
 
 QMatrix4x4 Camera::getMatrix() {

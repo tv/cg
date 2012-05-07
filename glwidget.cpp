@@ -1,18 +1,27 @@
 #include "glwidget.h"
 
-GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent)
+GLWidget::GLWidget(QGLFormat format, QWidget *parent)
+    : QGLWidget(format, parent)
 {
+
     setMouseTracking(true);
     this->selectedIndex = 0;
 
     this->showDebug = false;
 
-    this->debugMode = 2;
+    this->debugMode = 0;
     this->shadowEnabled = true;
 }
 
 void GLWidget::initializeGL()
 {
+    GLenum errCode;
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "initializeGL start OpenGL Error: " << errCode;
+    }
+
+
     const GLubyte* pGPU = glGetString(GL_RENDERER);
     const GLubyte* pVersion = glGetString(GL_VERSION);
     const GLubyte* pShaderVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
@@ -21,11 +30,13 @@ void GLWidget::initializeGL()
     qDebug() << "OpenGL: " << QString((char*)pVersion).trimmed();
     qDebug() << "GLSL: " << QString((char*)pShaderVersion);
 
-//    glShadeModel(GL_SMOOTH);
     glClearColor (0.0, 0.0, 0.0, 0.0);
-  //  glClearDepth(1.0f);
 
     glEnable(GL_DEPTH_TEST);
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "initializeGL after enable OpenGL Error: " << errCode;
+    }
 
 
     this->_program = new QGLShaderProgram();
@@ -36,6 +47,12 @@ void GLWidget::initializeGL()
     this->_shadowProgram->addShaderFromSourceFile(QGLShader::Vertex, "./shaders/shadow.v.glsl");
     this->_shadowProgram->addShaderFromSourceFile(QGLShader::Fragment, "./shaders/shadow.f.glsl");
 
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "initializeGL after shaders OpenGL Error: " << errCode;
+    }
+
+
     this->_program->link();
     this->_shadowProgram->link();
 
@@ -43,28 +60,27 @@ void GLWidget::initializeGL()
     qDebug() << this->_shadowProgram->log();
 
     this->camera = new Camera();
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "initializeGL before objects OpenGL Error: " << errCode;
+    }
+
     this->initializeObjects();
 
-    GLenum errCode;
-    const GLubyte *errString;
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-
         qDebug() << "initializeGL END OpenGL Error: " << errCode;
     }
 
 
-
-
     this->_timer = new QTimer(this);
     connect(this->_timer, SIGNAL(timeout()), this, SLOT(animate()));
-    this->_timer->start(10);
+    this->_timer->start(100);
 
 }
 
 void GLWidget::paintGL()
 {
     GLenum errCode;
-    const GLubyte *errString;
 
     // First pass for shadowmapping
 
@@ -72,9 +88,11 @@ void GLWidget::paintGL()
     Camera * cam;
     Light * light;
 
+
     if (this->debugMode != 3) {
 
-    // only one light atm
+
+
     for (int i = 0; i < this->_lights.size(); i++) {
         light = this->_lights.at(i);
         if (!light->initializedFBO) {
@@ -98,7 +116,7 @@ void GLWidget::paintGL()
 
         } else {
 
-            glViewport(0,0, this->_screenWidth*0.5, this->_screenHeight*0.5);
+            glViewport(0,0, this->_screenWidth/2, this->_screenHeight/2);
             p = this->_shadowProgram;
 
         }
@@ -159,6 +177,7 @@ void GLWidget::paintGL()
     }
 
 
+
     // Second pass
     p = this->_program;
     cam = this->camera;
@@ -166,9 +185,18 @@ void GLWidget::paintGL()
 
     glViewport(0,0, this->_screenWidth, this->_screenHeight);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "GLWidget::draw after clear: " << errCode;
+    }
+
     p->bind();
 
     cam->injectToShader(p);
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+
+        qDebug() << "GLWidget::draw  after cam: " << errCode;
+    }
 
     p->setUniformValue("debug_mode", this->debugMode);
 
@@ -186,6 +214,7 @@ void GLWidget::paintGL()
 
         qDebug() << "GLWidget  after  2nd pas: " << errCode;
     }
+
 }
 
 void GLWidget::_append(QLObject* obj)
@@ -206,65 +235,60 @@ void GLWidget::initializeObjects()
     Material* material3 = new Material();
     material3->setAmbient(QVector4D(0.4, 1.0, 0.3, 1.0));
 
+    GLenum errCode;
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "initObjects after mat OpenGL Error: " << errCode;
+    }
+
     GridNStuff* g = new GridNStuff();
-    g->lineDDA(QVector2D(75, 50), QVector2D(-75, -50));
-    g->lineDDA(QVector3D(50, 50, 50), QVector3D(-50, -50, -50));
+    g->lineAA(QVector3D(75, 50, -25), QVector3D(-75, -50, 25));
+    g->lineAA(QVector3D(50, 50, 50), QVector3D(-50, -50, -50));
     g->circleMid(QVector2D(0,0), 50);
 
-    g->setPosition(QVector3D(0, 0, -15));
+    g->setPosition(QVector3D(3, 0, -15));
+    g->setScale(3.0f);
     g->setMaterial(material2);
-
 
     g->gridPlane();
     this->_append(g);
 
+
+
+    FileObject* monkey = new FileObject();
+    monkey->readFile("textured.obj");
+    monkey->setPosition(QVector3D(-3, 0, -15));
+    this->_append(monkey);
+
+    this->_append(monkey);
+
+
     FileObject* room = new FileObject();
-    room->setMaterial(material3);
     room->readFile("floor.obj");
-    room->setPosition(QVector3D(0, -5, -22));
+    room->setPosition(QVector3D(0, -4, -15));
     this->_append(room);
 
-/*
-    FileObject* cube2= new FileObject();
-    cube2->setMaterial(material2);
-    cube2->readFile("cube.obj");
-    cube2->setPosition(QVector3D(-4, 0, -22));
-    this->_append(cube2);
 
 
-
-
-    FileObject* floor = new FileObject();
-    floor->setMaterial(material);
-    floor->readFile("floor.obj");
-    floor->setPosition(QVector3D(0, 0, -27));
-    floor->setRotateX(90.0f);
-    this->_append(floor);*/
-
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "initObjects after append OpenGL Error: " << errCode;
+    }
 
     Light* light = new Light();
     Camera* cam = new Camera();
-    cam->position = QVector4D(0.0f, 15.0f, -5.0f, 1.0f);
-    cam->theta = -30.0f;
+    cam->position = QVector4D(0.0f, 15.0f, -10.0f, 1.0f);
+    cam->theta = -45.0f;
     cam->beta = 0.0f;
     cam->calculateDirection();
     light->setCamera(cam);
     this->_lights.append(light);
 
-/*
-    Light* light2 = new Light();
-    light2->diffuse = QVector4D(1.0, 0.0, 0.0, 1.0);
-    Camera* cam2 = new Camera();
-    cam2->position = QVector4D(0.0f, 15.0f, -18.0f, 1.0f);
-    cam2->theta = -80.0f;
-    cam2->beta = 0.0f;
-    cam2->calculateDirection();
-    light2->setCamera(cam2);
-    this->_lights.append(light2);*/
-
 
     QObject::connect(light, SIGNAL(redraw()), this, SLOT(updateGL()));
     QObject::connect(this, SIGNAL(animateChild()), light, SLOT(animate()));
+
+    if ((errCode = glGetError()) != GL_NO_ERROR) {
+        qDebug() << "initObjects END OpenGL Error: " << errCode;
+    }
 }
 
 void GLWidget::resizeGL(int w, int h)
@@ -285,8 +309,6 @@ void GLWidget::resizeGL(int w, int h)
 
 void GLWidget::animate()
 {
-
-
     emit animateChild();
     this->updateGL();
 }
@@ -359,6 +381,14 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     if (this->selectedIndex == -1) return;
 
     if (event->buttons() & Qt::LeftButton) {
+
+        int dx = event->x() - lastPos.x();
+        int dy = event->y() - lastPos.y();
+
+        this->_objects.at(1)->addRotate(dx, dy, 0);
+
+        return;
+/*
         int dx = event->x() - lastPos.x();
         int dy = event->y() - lastPos.y();
 
@@ -374,7 +404,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             this->_lights.at(0)->camera->rotateUp();
         } else  if (dy < 0) {
             this->_lights.at(0)->camera->rotateDown();
-        }
+        }*/
     }
 
     if (event->buttons() & Qt::MidButton) {

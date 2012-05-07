@@ -1,9 +1,9 @@
-#version 130
-#pragma debug(on)
+#version 150
 
 varying vec4 vv_position;  // position of the vertex (and fragment) in world space
 varying vec3 vv_normalDirection;  // surface normal vector in world space
 varying vec3 vv_normal;
+varying vec2 vv_tex;
 
 uniform mat4 m, v, p;
 uniform mat4 v_inv;
@@ -21,7 +21,12 @@ uniform float[23] in_light1;
 
 uniform float[17] in_material;
 
+uniform sampler2D texture;
+
 uniform int debug_mode;
+
+varying float vv_shade;
+
 
 struct Light
 {
@@ -168,7 +173,7 @@ vec3 specularReflection(Light light, Material mat, float attenuation,
 void main(void)
 {
     if (debug_mode == 2) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        gl_FragColor = vec4(vv_shade, texture2D(texture, vv_tex).r, 1.0, 1.0);
         return;
     }
     Material frontMaterial = Material(
@@ -218,10 +223,7 @@ void main(void)
 
         float shadow = shadows(lights[i], ShadowCoord[i], lightDirection);
 
-
-
         float attenuation = attenuation(lights[i], lightDirection);
-
 
         vec3 diffuseReflection = diffuseReflection(
             lights[i],
@@ -254,6 +256,11 @@ void main(void)
 
 
     }
+
+
+        combinedLightning *= texture2D(texture, vv_tex);
+
+        combinedLightning *= vv_shade;
 
     gl_FragColor = vec4(combinedLightning, 1.0);
 

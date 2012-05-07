@@ -1,5 +1,9 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
+
+#define GL_GLEXT_PROTOTYPES true
+
+
 #include <QObject>
 #include <QtOpenGL>
 
@@ -19,6 +23,7 @@ public:
     void setEmission(QVector4D in);
     void setShihiness(GLfloat in);
 
+    void setImage(QString in);
 
 
 protected:
@@ -27,6 +32,8 @@ protected:
     QVector4D emission;
     QVector4D specular;
     GLfloat shininess;
+
+    GLuint textureId;
 
 };
 

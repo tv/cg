@@ -19,6 +19,7 @@ public:
 
     void lineDDA(QVector3D start, QVector3D end);
     void lineDDA(QVector2D start, QVector2D end);
+    void lineAA(QVector3D start, QVector3D end);
 
     void circleMid(QVector2D mid, int radius);
 signals:

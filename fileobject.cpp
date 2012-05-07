@@ -36,12 +36,13 @@ void FileObject::readFile(QString path) {
     QTextStream stream(&myFile);
     QList<QVector4D*> vertexTemp;
     QList<QVector3D*> normTemp;
+    QList<QVector2D*> textureTemp;
 
-    QString material;
+    QList<QString> materialIds;
 
     QList<QString> mtlTemp;
 
-    GLfloat materialId = 0;
+    GLfloat materialId = 1;
 
 
 
@@ -58,8 +59,16 @@ void FileObject::readFile(QString path) {
             );
 
             normTemp.append(vector);
-        } else if (line.startsWith("mtllib")) {
-            mtlTemp.append(list.at(1));
+        } else if (line.startsWith("vt")) {
+
+            QVector2D* vector = new QVector2D(
+                stringToFloat(list.at(1), &ok),
+                stringToFloat(list.at(2), &ok)
+            );
+
+            textureTemp.append(vector);
+
+
 
         } else if (line.startsWith('v')) {
             QVector4D* vector = new QVector4D(
@@ -96,6 +105,7 @@ void FileObject::readFile(QString path) {
 
             QVector4D* vec;
             QVector3D* norm;
+            QVector2D* tex;
             int i;
 
 
@@ -123,6 +133,8 @@ void FileObject::readFile(QString path) {
 
                 for (i = 1; i < list.size(); i++) {
                     vec = vertexTemp.at(stringToInt(list.at(i).section('/', 0, 0), &ok)-1);
+                    tex = textureTemp.at(stringToInt(list.at(i).section('/', 1, 1), &ok)-1);
+
                     this->_faces.append(vec->x());
                     this->_faces.append(vec->y());
                     this->_faces.append(vec->z());
@@ -132,11 +144,15 @@ void FileObject::readFile(QString path) {
                     this->_faces.append(normal.y());
                     this->_faces.append(normal.z());
 
+                    this->_faces.append(tex->x());
+                    this->_faces.append(tex->y());
+
                     this->_faces.append(materialId); // Material id
                 }
             } else {
                 for (i = 1; i < list.size(); i++) {
                     vec = vertexTemp.at(stringToInt(list.at(i).section('/', 0, 0), &ok)-1);
+                    tex = textureTemp.at(stringToInt(list.at(i).section('/', 1, 1), &ok)-1);
                     norm = normTemp.at(stringToInt(list.at(i).section('/', 2, 2), &ok)-1);
 
                     this->_faces.append(vec->x());
@@ -148,75 +164,81 @@ void FileObject::readFile(QString path) {
                     this->_faces.append(norm->y());
                     this->_faces.append(norm->z());
 
+                    this->_faces.append(tex->x());
+                    this->_faces.append(tex->y());
+
                     this->_faces.append(materialId); // Material id
                 }
             }
 
         } else if (line.startsWith("usemtl")) {
-            material = list.at(1);
+            materialId = materialIds.indexOf(list.at(1));
+            materialId = 1;
+
+        } else if (line.startsWith("mtllib")) {
+            QFile myFile(dir+list.at(1));
+
+            QString line;
+
+            if (!myFile.open(QIODevice::ReadOnly)) {
+                std::cout << "Error reading file" << std::endl;
+                return;
+            }
+
+            QTextStream mtlStream(&myFile);
+
+            Material* mat;
+
+            do {
+                bool ok = true;
+                line = mtlStream.readLine();
+                QStringList list = line.split(' ');
+
+                if (line.startsWith("newmtl")) {
+                    mat = new Material();
+                    qDebug() << list.at(1);
+
+                    this->_materials.append(mat);
+                    materialIds.append(list.at(1));
+
+                } else if (line.startsWith("Ka")) {
+
+                    mat->setAmbient(QVector4D(
+                        stringToFloat(list.at(1), &ok),
+                        stringToFloat(list.at(2), &ok),
+                        stringToFloat(list.at(3), &ok),
+                        1.0f
+                    ));
+
+                } else if (line.startsWith("Kd")) {
+                    mat->setDiffuse(QVector4D(
+                        stringToFloat(list.at(1), &ok),
+                        stringToFloat(list.at(2), &ok),
+                        stringToFloat(list.at(3), &ok),
+                        1.0f
+                    ));
+                } else if (line.startsWith("map_Kd")) {
+                    mat->setImage(dir+list.at(1));
+                } else if (line.startsWith("Ks")) {
+                    mat->setSpecular(QVector4D(
+                        stringToFloat(list.at(1), &ok),
+                        stringToFloat(list.at(2), &ok),
+                        stringToFloat(list.at(3), &ok),
+                        1.0f
+                    ));
+                } else if (line.startsWith("Ns")) {
+                    mat->setShihiness(stringToFloat(list.at(1), &ok));
+                }
+
+
+                if (!ok) {
+                    qDebug() << "PARSER FAILED AT " << line;
+                }
+            } while (!line.isNull());
         }
 
         if (!ok) {
             qDebug() << "PARSER FAILED AT " << line;
         }
     } while (!line.isNull());
-
-    for (int i = 0; i < mtlTemp.size(); i++) {
-
-        QFile myFile(dir+mtlTemp.at(i));
-
-        QString line;
-
-        if (!myFile.open(QIODevice::ReadOnly)) {
-            std::cout << "Error reading file" << std::endl;
-            return;
-        }
-
-        QTextStream mtlStream(&myFile);
-
-        Material* mat;
-
-        do {
-            bool ok = true;
-            line = mtlStream.readLine();
-            QStringList list = line.split(' ');
-
-            if (line.startsWith("newmtl")) {
-                mat = new Material();
-                qDebug() << list.at(1);
-                this->_materials.append(mat);
-
-            } else if (line.startsWith("Ka")) {
-
-                mat->setAmbient(QVector4D(
-                    stringToFloat(list.at(1), &ok),
-                    stringToFloat(list.at(2), &ok),
-                    stringToFloat(list.at(3), &ok),
-                    1.0f
-                ));
-
-            } else if (line.startsWith("Kd")) {
-                mat->setDiffuse(QVector4D(
-                    stringToFloat(list.at(1), &ok),
-                    stringToFloat(list.at(2), &ok),
-                    stringToFloat(list.at(3), &ok),
-                    1.0f
-                ));
-            } else if (line.startsWith("Ks")) {
-                mat->setSpecular(QVector4D(
-                    stringToFloat(list.at(1), &ok),
-                    stringToFloat(list.at(2), &ok),
-                    stringToFloat(list.at(3), &ok),
-                    1.0f
-                ));
-            } else if (line.startsWith("Ns")) {
-                mat->setShihiness(stringToFloat(list.at(1), &ok));
-            }
-
-
-            if (!ok) {
-                qDebug() << "PARSER FAILED AT " << line;
-            }
-        } while (!line.isNull());
-    }
 }

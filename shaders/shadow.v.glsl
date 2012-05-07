@@ -1,4 +1,4 @@
-#version 120
+#version 150
 uniform mat4 m, v, p;
 attribute vec4 v_coord;
 

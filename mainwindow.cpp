@@ -6,7 +6,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    GLWidget* widget = new GLWidget(this);
+
+    QGLFormat fmt;
+    fmt.setVersion(3,2);
+    fmt.setProfile(QGLFormat::CoreProfile);
+
+    GLWidget* widget = new GLWidget(fmt, this);
     widget->setFocus();
     this->setCentralWidget(widget);
 }

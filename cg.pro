@@ -32,4 +32,9 @@ OTHER_FILES += shader.vsf \
     shadow.v.glsl \
     shadow.f.glsl \
     blur.f.glsl \
-    blur.v.glsl
+    blur.v.glsl \
+    shaders/shadow.v.glsl \
+    shaders/shadow.f.glsl \
+    shaders/shader.v.glsl \
+    shaders/shader.g.glsl \
+    shaders/shader.f.glsl

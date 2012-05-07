@@ -3,7 +3,7 @@
 GridNStuff::GridNStuff(QObject *parent) :
     QLObject(parent)
 {
-    this->dataType = GL_QUADS;
+    this->dataType = GL_TRIANGLES;
 }
 
 
@@ -16,39 +16,45 @@ void GridNStuff::drawPixel(int xin, int yin, int zin, float color)
 
     GLfloat v[8][3] = {
         // front
-        {0.0, 0.0,  1.0},
-        { 1.0, 0.0,  1.0},
-        { 1.0,  1.0,  1.0},
-        {0.0,  1.0,  1.0},
+        {0.0, 0.0, 1.0},
+        {1.0, 0.0, 1.0},
+        {1.0, 1.0, 1.0},
+        {0.0, 1.0, 1.0},
         // back
         {0.0, 0.0, 0.0},
-        { 1.0, 0.0, 0.0},
-        { 1.0,  1.0, 0.0},
-        {0.0,  1.0, 0.0},
+        {1.0, 0.0, 0.0},
+        {1.0, 1.0, 0.0},
+        {0.0, 1.0, 0.0},
     };
 
     GLushort e[] = {
-        // front
-        0, 1, 2, 3,
-        // top
-        1, 5, 6, 2,
-        // back
-        7, 6, 5, 4,
-        // bottom
-        4, 0, 3, 7,
-        // left
-        4, 5, 1, 0,
-        // right
-        3, 2, 6, 7
+        // front face
+        0, 1, 2,
+        2, 3, 0,
+        // top face
+        3, 2, 6,
+        6, 7, 3,
+        // back face
+        7, 6, 5,
+        5, 4, 7,
+        // left face
+        4, 0, 3,
+        3, 7, 4,
+        // bottom face
+        0, 1, 5,
+        5, 4, 0,
+        // right face
+        1, 5, 6,
+        6, 2, 1,
     };
 
 
     int j = 0;
-    for (j = 0; j < 6; j++) {
+    for (j = 0; j < 12; j++) {
 
         int i;
-        for (i = 0; i < 4; i++) {
-            GLfloat* ver = v[ e[j*4+i] ];
+        for (i = 0; i < 3; i++) {
+            GLfloat* ver = v[ e[j*3+i] ];
             verts.append(
                 QVector4D(
                     (x + ver[0]) / size,
@@ -65,7 +71,8 @@ void GridNStuff::drawPixel(int xin, int yin, int zin, float color)
             verts.at(2).toVector3D()
         );
 
-        for (i = 0; i < 4; i++) {
+
+        for (i = 0; i < 3; i++) {
             this->_faces.append(verts.at(i).x());
             this->_faces.append(verts.at(i).y());
             this->_faces.append(verts.at(i).z());
@@ -74,6 +81,9 @@ void GridNStuff::drawPixel(int xin, int yin, int zin, float color)
             this->_faces.append(norm.x());
             this->_faces.append(norm.y());
             this->_faces.append(norm.z());
+
+            this->_faces.append(0.5);
+            this->_faces.append(0.5);
 
             this->_faces.append(color);
         }
@@ -104,6 +114,7 @@ void GridNStuff::gridPlane()
 
     int i = 0, j = 0;
     while (i <= 100) {
+        j = 0;
         while (j <= 100) {
             this->drawPixel( i, j, 0, 0.5);
             this->drawPixel(-i, j, 0, 0.5);
@@ -117,10 +128,7 @@ void GridNStuff::gridPlane()
 
 }
 
-void GridNStuff::lineDDA(QVector2D start, QVector2D end)
-{
-    this->lineDDA(QVector3D(start, 0), QVector3D(end, 0));
-}
+
 
 void GridNStuff::lineDDA(QVector3D start, QVector3D end)
 {
@@ -157,6 +165,57 @@ void GridNStuff::lineDDA(QVector3D start, QVector3D end)
 
         this->drawPixel((int)round(x),(int)round(y),(int)round(z));
     }
+}
+
+void GridNStuff::lineDDA(QVector2D start, QVector2D end)
+{
+    this->lineDDA(QVector3D(start, 0), QVector3D(end, 0));
+}
+
+void GridNStuff::lineAA(QVector3D start, QVector3D end)
+{
+    int dx = end.x() - start.x(),
+        dy = end.y() - start.y(),
+        dz = end.z() - start.z();
+
+    int steps;
+    if (abs(dx) >= abs(dy) && abs(dx) >= abs(dz)) {
+        // delta x greatest
+
+        steps = abs(dx);
+    } else if(abs(dy) >= abs(dx) && abs(dy) >= abs(dz)) {
+        steps = abs(dy);
+    } else {
+        steps = abs(dz);
+    }
+
+    float xinc = (float)dx / (float)steps,
+          yinc = (float)dy / (float)steps,
+          zinc = (float)dz / (float)steps;
+
+    float x = start.x(),
+          y = start.y(),
+          z = start.z();
+
+    float intery = (x+y+z)/3;
+    intery -= round(intery);
+
+    this->drawPixel((int)round(x),(int)round(y),(int)round(z));
+    this->drawPixel((int)round(x),(int)round(y)+1,(int)round(z)+1, 1-intery);
+
+    for (int i = 0; i < steps; i++) {
+        x += xinc;
+        y += yinc;
+        z += zinc;
+
+        intery  = (x+y+z)/3;
+        intery -= round(intery);
+
+
+        this->drawPixel((int)round(x),(int)round(y),(int)round(z), intery);
+        this->drawPixel((int)round(x),(int)round(y)+1,(int)round(z)+1, 1-intery);
+    }
+
 }
 
 void GridNStuff::circleMid(QVector2D mid, int radius)

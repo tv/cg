@@ -51,7 +51,6 @@ void QLObject::_initialize()
 void QLObject::injectToShader(QGLShaderProgram *p)
 {
     GLenum errCode;
-    const GLubyte *errString;
 
     if (!this->_initialized) {
         this->_initialize();
@@ -86,6 +85,7 @@ void QLObject::injectToShader(QGLShaderProgram *p)
 
     p->enableAttributeArray("v_coord");
     p->enableAttributeArray("v_normal");
+    p->enableAttributeArray("v_tex");
     p->enableAttributeArray("v_mat");
 
     if (this->_bufferEnabled) {
@@ -94,12 +94,16 @@ void QLObject::injectToShader(QGLShaderProgram *p)
 
         this->_vertexBuffer->bind();
 
+        if ((errCode = glGetError()) != GL_NO_ERROR) {
+            qDebug() << "QLobject  after bind vbo OpenGL Error: " << errCode;
+        }
+
         p->setAttributeBuffer(
             "v_coord",
             GL_FLOAT,
             0 * sizeof(GLfloat),
             4,
-            8 * sizeof(GLfloat)
+            10 * sizeof(GLfloat)
         );
 
         p->setAttributeBuffer(
@@ -107,21 +111,32 @@ void QLObject::injectToShader(QGLShaderProgram *p)
             GL_FLOAT,
             4 * sizeof(GLfloat),
             3,
-            8 * sizeof(GLfloat)
+            10 * sizeof(GLfloat)
+        );
+
+        p->setAttributeBuffer(
+            "v_tex",
+            GL_FLOAT,
+            7 * sizeof(GLfloat),
+            2,
+            10 * sizeof(GLfloat)
         );
 
         p->setAttributeBuffer(
             "v_mat",
             GL_FLOAT,
-            7 * sizeof(GLfloat),
+            9 * sizeof(GLfloat),
             1,
-            8 * sizeof(GLfloat)
+            10 * sizeof(GLfloat)
         );
 
 
         glDrawArrays(this->dataType, 0, this->_vertexBuffer->size() / (sizeof(GLfloat)));
 
 
+        if ((errCode = glGetError()) != GL_NO_ERROR) {
+            qDebug() << "QLobject  after drawArr OpenGL Error: " << errCode;
+        }
 
     } else {
         GLfloat* ptr = this->_faces.data();
@@ -134,10 +149,10 @@ void QLObject::injectToShader(QGLShaderProgram *p)
 
     p->disableAttributeArray("v_coord");
     p->disableAttributeArray("v_normal");
+    p->disableAttributeArray("v_tex");
     p->disableAttributeArray("v_mat");
 
     if ((errCode = glGetError()) != GL_NO_ERROR) {
-
         qDebug() << "QLobject  after draw OpenGL Error: " << errCode;
     }
 
