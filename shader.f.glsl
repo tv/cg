@@ -31,7 +31,6 @@ struct Light
   float constantAttenuation, linearAttenuation, quadraticAttenuation;
   float spotCutoff, spotExponent;
   vec3 direction;
-  sampler2DShadow shadowMap;
 };
 
 struct Material
@@ -67,13 +66,13 @@ float shadows(Light light, vec4 SC, vec4 lightDirection)
 
     for (y = -1.5; y <= 1.5; y += 1.0) {
       for (x = -1.5; x <= 1.5; x += 1.0) {
-        sum += lookup(light.shadowMap, SC, x, y);
+        sum += lookup(in_light0_shadow, SC, x, y);
       }
     }
 
     return sum/ 16.0;
 
-
+/*
     float distance = lightDirection.w / 50;
     vec2 moments =  shadow2DProj(light.shadowMap, SC).r;
     if (distance <= moments.x) {
@@ -87,7 +86,7 @@ float shadows(Light light, vec4 SC, vec4 lightDirection)
 
     float d = distance - moments.x;
 
-    return variance / (variance + d*d);
+    return variance / (variance + d*d);*/
 }
 
 vec4 white()
@@ -187,9 +186,7 @@ void main(void)
         in_light0[12], in_light0[13], in_light0[14],
         in_light0[15], in_light0[16],
 
-        vec3(-in_light0[17], -in_light0[18], -in_light0[19]),
-
-        in_light0_shadow
+        vec3(-in_light0[17], -in_light0[18], -in_light0[19])
     );
 
     lights[1] = Light(
@@ -200,9 +197,7 @@ void main(void)
         in_light1[12], in_light1[13], in_light1[14],
         in_light1[15], in_light1[16],
 
-        vec3(-in_light1[17], -in_light1[18], -in_light1[19]),
-
-        in_light1_shadow
+        vec3(-in_light1[17], -in_light1[18], -in_light1[19])
     );
 
     //lights[0].spotCutoff = 10.0f;
